@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="emerald"> <!-- Default theme; overridden by settings -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Joseph's Software Toys</title>
+  <link rel="manifest" href="manifest.json"> <!-- Optional root manifest if you add one -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="shared/styles-extra.css">
+</head>
+<body class="bg-base-100 min-h-screen flex flex-col">
+  <!-- Header with View Toggle and Global Settings -->
+  <div class="navbar bg-base-200 shadow-md">
+    <div class="flex-1">
+      <h1 class="text-2xl font-bold ml-4">Joseph's Software Toys</h1>
+    </div>
+    <div class="flex items-center gap-2 mr-4">
+      <div class="btn-group">
+        <button id="card-view-btn" class="btn btn-sm">Card View</button>
+        <button id="list-view-btn" class="btn btn-sm">List View</button>
+      </div>
+      <button id="global-settings-btn" class="btn btn-sm btn-ghost">⚙️</button>
+    </div>
+  </div>
+
+  <!-- Toy Container: Dynamically switches between card/list -->
+  <div id="toys-container" class="flex-1 p-8"></div>
+
+  <!-- Global Settings Modal -->
+  <dialog id="global-settings-modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">Global Settings</h3>
+      <div class="form-control">
+        <label class="label cursor-pointer">
+          <span class="label-text">Sound Effects</span>
+          <input type="checkbox" id="global-sound-toggle" class="toggle toggle-primary" />
+        </label>
+        <label class="label cursor-pointer">
+          <span class="label-text">Vibration (Haptics)</span>
+          <input type="checkbox" id="global-vibration-toggle" class="toggle toggle-primary" />
+        </label>
+        <label class="label cursor-pointer">
+          <span class="label-text">Dark Theme</span>
+          <input type="checkbox" id="global-theme-toggle" class="toggle toggle-primary" />
+        </label>
+
+        <label class="label cursor-pointer">
+          <span class="label-text">Show FPS</span>
+          <input type="checkbox" id="global-show-fps" class="toggle toggle-primary" />
+        </label>
+      </div>
+      <div class="modal-action">
+        <button class="btn" onclick="document.getElementById('global-settings-modal').close()">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Toy Info Modal -->
+  <!-- TODO: This modal is populated dynamically in showToyInfo(). Add more sections like images or videos if needed. -->
+  <dialog id="toy-info-modal" class="modal">
+    <div class="modal-box">
+      <h3 id="toy-info-title" class="font-bold text-xl mb-4 flex items-center gap-2">
+        <!-- Emoji and name will be inserted here -->
+      </h3>
+      <p id="toy-info-desc" class="mb-4">
+        <!-- Description will be inserted here -->
+      </p>
+      <div id="toy-info-links" class="mb-4">
+        <!-- Links will be inserted here -->
+      </div>
+      <div class="modal-action">
+        <button class="btn" onclick="document.getElementById('toy-info-modal').close()">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="shared/utils.js"></script> <!-- Extend for global settings below -->
+  <script>
+    // Toy data (easy to add more later)
+    // TODO: Expand each toy object with richer descriptions and links for the info modal
+    const toys = [
+      { name: "Fractal Explorer", path: "fractal-explorer/", desc: "Dive into infinite patterns", emoji: "🌀" }, // TODO: Add detailed desc and links
+      { name: "Particle Fountain Simulator", path: "particle-fountain/", desc: "Bursting colorful particles", emoji: "✨" }, // TODO: Add detailed desc and links
+      { name: "Audio Wave Visualizer", path: "audio-wave-visualizer/", desc: "Visualize sound in real-time", emoji: "🎵" }, // TODO: Add detailed desc and links
+      { name: "Cellular Automata Playground", path: "cellular-automata-playground/", desc: "Game of Life simulations", emoji: "🔬" }, // TODO: Add detailed desc and links
+      { name: "3D Rotating Orb", path: "3d-rotating-orb/", desc: "Mini solar system", emoji: "🌌" }, // TODO: Add detailed desc and links
+      { name: "Generative Landscape Drawer", path: "generative-landscape-drawer/", desc: "Procedural terrains", emoji: "🏔️" } // TODO: Add detailed desc and links
+    ];
+
+    const container = document.getElementById('toys-container');
+    const cardBtn = document.getElementById('card-view-btn');
+    const listBtn = document.getElementById('list-view-btn');
+
+    // Load saved view or default to card
+    let currentView = localStorage.getItem('homeView') || 'card';
+    updateViewButtons();
+
+    // Render toys based on view
+    function renderToys(view) {
+      container.innerHTML = '';
+      container.className = 'flex-1 p-8';
+      if (view === 'card') {
+        container.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6');
+        toys.forEach(toy => {
+          const card = document.createElement('a');
+          card.href = `${toy.path}index.html`;
+          card.className = 'card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow';
+          card.innerHTML = `
+            <figure class="h-48 bg-base-300 flex items-center justify-center relative">
+              <img src="${toy.path}assets/preview.png" alt="${toy.name}" class="max-h-full max-w-full object-contain absolute inset-0 opacity-0 transition-opacity duration-500" 
+                  onload="this.style.opacity='1'" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')" />
+              <div class="hidden flex flex-col items-center justify-center h-full text-center px-4">
+                <span class="text-6xl mb-2">${toy.emoji}</span>
+                <p class="text-sm font-medium">${toy.name}</p>
+              </div>
+            </figure>
+            <div class="card-body py-4 px-6 text-sm"> <!-- Compact text box -->
+              <h2 class="text-lg font-bold">${toy.name}</h2>
+              <p class="text-xs opacity-80">${toy.desc}</p>
+              <button class="btn btn-ghost btn-circle btn-sm absolute top-2 right-2 z-10 info-btn">?</button>
+            </div>
+          `;
+          container.appendChild(card);
+          // Add event listener to the info button
+          const infoBtn = card.querySelector('.info-btn');
+          infoBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showToyInfo(toy);
+          });
+        });
+      } else { // List view
+        container.classList.add('space-y-4');
+        toys.forEach(toy => {
+          const item = document.createElement('a');
+          item.href = `${toy.path}index.html`;
+          item.className = 'flex items-center gap-4 p-4 bg-base-200 rounded-lg hover:bg-base-300 transition';
+          item.innerHTML = `
+            <div class="relative w-24 h-24">
+              <img src="${toy.path}assets/preview.png" alt="${toy.name}" class="w-24 h-24 object-contain bg-base-300 rounded absolute inset-0 opacity-0 transition-opacity duration-500" 
+                  onload="this.style.opacity='1'" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')" />
+              <div class="hidden flex items-center justify-center w-24 h-24 text-4xl bg-base-300 rounded">
+                ${toy.emoji}
+              </div>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-xl font-bold">${toy.name}</h3>
+              <p>${toy.desc}</p>
+            </div>
+            <button class="btn btn-ghost btn-circle info-btn">?</button>
+          `;
+          container.appendChild(item);
+          // Add event listener to the info button
+          const infoBtn = item.querySelector('.info-btn');
+          infoBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showToyInfo(toy);
+          });
+        });
+      }
+    }
+
+    function updateViewButtons() {
+      cardBtn.classList.toggle('btn-active', currentView === 'card');
+      listBtn.classList.toggle('btn-active', currentView === 'list');
+      renderToys(currentView);
+    }
+
+    cardBtn.addEventListener('click', () => {
+      currentView = 'card';
+      localStorage.setItem('homeView', 'card');
+      updateViewButtons();
+    });
+    listBtn.addEventListener('click', () => {
+      currentView = 'list';
+      localStorage.setItem('homeView', 'list');
+      updateViewButtons();
+    });
+
+    // Toy info modal
+    // TODO: Expand this function to include richer content for each toy.
+    // - Update toy.desc in the toys array with multi-line descriptions.
+    // - Populate links.innerHTML with hyperlinks to external websites (e.g., Wikipedia, tutorials).
+    // - Consider adding images, videos, or other media if needed.
+    function showToyInfo(toy) {
+      const modal = document.getElementById('toy-info-modal');
+      const title = document.getElementById('toy-info-title');
+      const desc = document.getElementById('toy-info-desc');
+      const links = document.getElementById('toy-info-links');
+      
+      title.innerHTML = `<span class="text-2xl">${toy.emoji}</span> ${toy.name}`;
+      // TODO: Replace toy.desc with expanded, multi-line text (use innerHTML if formatting is needed)
+      desc.textContent = toy.desc;
+      // TODO: Add hyperlinks here, e.g., links.innerHTML = '<a href="https://example.com" target="_blank" class="link">Learn More</a>';
+      links.innerHTML = ''; // Placeholder for future links
+      
+      modal.showModal();
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.position = 'fixed';
+      document.documentElement.style.width = '100%';
+      document.documentElement.style.height = '100%';
+      modal.addEventListener('close', () => {
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.position = '';
+        document.documentElement.style.width = '';
+        document.documentElement.style.height = '';
+      }, { once: true });
+    }
+
+    // Global Settings Modal Logic
+    const settingsModal = document.getElementById('global-settings-modal');
+    document.getElementById('global-settings-btn').addEventListener('click', () => {
+      settingsModal.showModal();
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.position = 'fixed';
+      document.documentElement.style.width = '100%';
+      document.documentElement.style.height = '100%';
+      settingsModal.addEventListener('close', () => {
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.position = '';
+        document.documentElement.style.width = '';
+        document.documentElement.style.height = '';
+      }, { once: true });
+    });
+
+    // Load saved global settings
+    document.getElementById('global-sound-toggle').checked = utils.isSoundEnabled(); // From shared utils
+      document.getElementById('global-vibration-toggle').checked = utils.isVibrationEnabled();
+    // Initialize toggles and apply theme via shared helper
+    utils.applyGlobalTheme();
+
+    // Save on change
+    document.getElementById('global-sound-toggle').addEventListener('change', (e) => utils.toggleSound(e.target.checked));
+    document.getElementById('global-vibration-toggle').addEventListener('change', (e) => localStorage.setItem('vibrationEnabled', e.target.checked));
+    document.getElementById('global-theme-toggle').addEventListener('change', (e) => {
+      // Manual selection should turn off system-follow (we no longer expose a homepage "Follow System" toggle)
+      localStorage.setItem('systemThemeEnabled', 'false');
+      document.getElementById('global-theme-toggle').disabled = false;
+      localStorage.setItem('globalTheme', e.target.checked ? 'luxury' : 'emerald');
+      utils.applyGlobalTheme();
+    });
+
+    // GLOBAL: Show FPS toggle - sync immediate behavior across the app
+    const globalShowFps = document.getElementById('global-show-fps');
+    if (globalShowFps) {
+      globalShowFps.checked = localStorage.getItem('showFps') === 'true';
+      globalShowFps.addEventListener('change', (e) => {
+        const val = e.target.checked;
+        localStorage.setItem('showFps', val);
+        // Update any other controls on the page
+        document.querySelectorAll('#settings-show-fps').forEach(el => el.checked = val);
+
+        // If overlay isn't ready, retry for a short period
+        let attempts = 0;
+        const trySet = () => {
+          if (window.ui && typeof window.ui.setFpsEnabled === 'function') {
+            window.ui.setFpsEnabled(!!val);
+          } else if (++attempts < 10) {
+            setTimeout(trySet, 100);
+          }
+        };
+        trySet();
+      });
+    }
+
+    // Ensure theme reflects current values
+    utils.applyGlobalTheme();
+
+    // Initial render
+    renderToys(currentView);
+  </script>
+</body>
+</html>
