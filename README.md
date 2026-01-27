@@ -4,10 +4,6 @@ A collection of interactive, installable Progressive Web Apps (PWAs) built with 
 
 ![PWA Badge](https://img.shields.io/badge/PWA-Installable-blue) ![Vanilla JS](https://img.shields.io/badge/Vanilla-JS-yellow) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
 
-## Live Demo
-
-[https://j-tynan.github.io/Software-Toys-PWA/](https://j-tynan.github.io/Software-Toys-PWA/)
-
 ## Screenshots
 
 <p align="center">
