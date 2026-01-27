@@ -678,9 +678,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Kick off registration (non-blocking)
   registerAboutFromMd();
 
-  // Hide the Home button while we have a bug to fix (temporary)
+  // Keep Home button visible so header buttons lay out correctly
   const homeBtn = document.getElementById('home-btn');
-  if (homeBtn) homeBtn.style.display = 'none';
+  if (homeBtn) homeBtn.style.display = ''; // ensure it remains in flow
 
   // Add an Export button to the header (Fractal Explorer only) to export the current view as PNG
   (function addExportButton() {
@@ -1267,7 +1267,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------------------
   // Header buttons
   // ------------------------------------------------------------
-  document.getElementById('demo-btn').addEventListener('click', () => {
+  const demoBtn = document.querySelector('.fractal-explorer-demo-btn') || document.getElementById('demo-btn');
+  if (demoBtn) demoBtn.addEventListener('click', () => {
     const demos = DEMO_LOCATIONS[currentFractalType];
     if (!demos || demos.length === 0) return;
 

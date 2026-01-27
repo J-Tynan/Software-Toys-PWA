@@ -1,7 +1,7 @@
 body { margin: 0; padding: 0; overflow: hidden; }
 /* Position canvas absolutely, JS will size it between header and footer */
 #canvas { position: absolute; left: 0; right: 0; display: block; }
-#demo-btn { position: absolute; top: 10px; left: 10px; }
+.fractal-explorer-demo-btn { position: absolute; top: 10px; left: 10px; }
 
 /* Larger touch targets for mobile */
 @media (max-width: 640px) {

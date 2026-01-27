@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Your logic here (e.g., draw fractal)
 
     // Demo mode button
-    document.getElementById('demo-btn').addEventListener('click', () => {
+    const demoBtn = document.querySelector('.rotating-orb-demo-btn') || document.getElementById('demo-btn');
+    if (demoBtn) demoBtn.addEventListener('click', () => {
         // Start auto-demo
     });
 
