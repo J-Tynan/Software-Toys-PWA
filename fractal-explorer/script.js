@@ -101,6 +101,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let demoIndex = 0;
 
+  // Startup view storage per-fractal. We capture the initial visible
+  // bounds on first load (after layout) and use it as the Reset target.
+  const startupViews = {};
+
+  // How much wider/taller to make the startup framing (1.33 ≈ 33% zoom out)
+  const STARTUP_ZOOM_OUT = 1.33;
+
+  function computeAdjustedView(minR, maxR, minI, maxI) {
+    const centerRe = (minR + maxR) / 2;
+    const centerIm = (minI + maxI) / 2;
+    const widthRe = (maxR - minR) * STARTUP_ZOOM_OUT;
+    const heightIm = (maxI - minI) * STARTUP_ZOOM_OUT;
+    return {
+      minRe: centerRe - widthRe / 2,
+      maxRe: centerRe + widthRe / 2,
+      minIm: centerIm - heightIm / 2,
+      maxIm: centerIm + heightIm / 2
+    };
+  }
+
+  function storeStartupView(fractal = currentFractalType) {
+    startupViews[fractal] = { minRe, maxRe, minIm, maxIm };
+  }
+
+  function applyStartupZoomAndStore(fractal = currentFractalType) {
+    const adj = computeAdjustedView(minRe, maxRe, minIm, maxIm);
+    minRe = adj.minRe; maxRe = adj.maxRe; minIm = adj.minIm; maxIm = adj.maxIm;
+    storeStartupView(fractal);
+  }
+
+  function restoreStartupView(fractal = currentFractalType) {
+    const sv = startupViews[fractal];
+    if (sv) {
+      minRe = sv.minRe; maxRe = sv.maxRe; minIm = sv.minIm; maxIm = sv.maxIm;
+      return true;
+    }
+    return false;
+  }
+
   // ------------------------------------------------------------
   // Worker + render lifecycle
   // ------------------------------------------------------------
@@ -242,6 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Save initial viewport width (complex plane) for zoom readout
   const initialReWidth = maxRe - minRe;
+
+  // Capture and apply a slightly zoomed-out startup framing so the whole
+  // fractal is visible on first load, then store it as the Reset target.
+  applyStartupZoomAndStore();
 
   function updateZoomReadout() {
     const zoomReadoutEl = document.getElementById('zoom-readout');
@@ -959,6 +1002,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // No hardcoded padding; layout computed from header/footer heights in updateCanvasLayout()
   updateZoomReadout();
 
+  // Re-capture startup view now that header/footer layout is finalized and ensure it includes the zoom-out
+  applyStartupZoomAndStore();
+
   // Observe header/footer size changes (e.g., responsive wrapping) and recompute layout
   (function observeHeaderFooter() {
     const hdr = document.querySelector('.fixed.top-0');
@@ -1003,6 +1049,10 @@ document.addEventListener('DOMContentLoaded', () => {
       maxIter = baseMaxIter;
       requestRender({ preview: false });
       updateZoomReadout();
+
+      // Save this default as the startup view for the selected fractal, applying the startup zoom-out
+      applyStartupZoomAndStore(type);
+
       ui.showToast(`Switched to ${type}`, 'info');
     }
   });
@@ -1303,8 +1353,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('reset-btn').addEventListener('click', () => {
-    // Reset to centered default view for current fractal
-    resetViewToDefaults();
+    // Restore to the captured startup view if available, otherwise fall back to default
+    const restored = restoreStartupView(currentFractalType);
+    if (!restored) {
+      resetViewToDefaults();
+    }
 
     setScale(1.0);
     maxIter = baseMaxIter;
