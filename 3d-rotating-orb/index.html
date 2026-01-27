@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="emerald">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rotating Orb</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../shared/styles-extra.css">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js');
+            });
+        }
+    </script>
+</head>
+<body class="bg-base-100 min-h-screen flex flex-col">
+    <script src="../shared/utils.js"></script>
+    <script src="../shared/ui.js"></script>
+    <script>
+        // Apply site-wide theme settings (follow system or manual choice)
+        utils.applyGlobalTheme();
+
+        // Create header
+        ui.createHeader('3D Rotating Orb');
+
+        // Coming soon content
+        const content = document.createElement('div');
+        content.className = 'flex-1 flex items-center justify-center p-8';
+        content.innerHTML = `
+            <div class="text-center max-w-md">
+                <div class="text-6xl mb-4">🌌</div>
+                <h2 class="text-3xl font-bold mb-4">Coming Soon!</h2>
+                <p class="text-lg mb-4">Mini solar system</p>
+                <p class="text-base opacity-80">This software toy is under development. 
+                    Experience a mesmerizing 3D rotating orb with orbiting elements. 
+                    Coming soon to your screen!</p>
+                <a href="../index.html" class="btn btn-primary mt-6">Back to Home</a>
+            </div>
+        `;
+        document.body.appendChild(content);
+    </script>
+</body>
+</html>
