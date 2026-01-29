@@ -1,0 +1,16 @@
+{
+  "name": "software-toys-pwa",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "npx http-server -c-1 -p 8000",
+    "test:smoke": "npx playwright test tests/smoke --project=chromium",
+    "test:smoke:headful": "npx playwright test tests/smoke --project=chromium --headed",
+    "postinstall": "npx playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "playwright": "^1.58.0",
+    "http-server": "^14.1.1"
+  }
+}

@@ -17,6 +17,8 @@
 // - Avoid scheduleFullResRender() spam from sliders (final render is explicit)
 // - Worker can be told "preview" so it can skip expensive paths (e.g., smooth coloring)
 //   (Requires worker to read `preview` flag; recommended)
+import { initExporter, exportScreenshot } from './exporter.js';
+
 // ------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -643,6 +645,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------------------
   ui.createHeader('Fractal Explorer');
 
+  // Initialize exporter with UI and state getter
+  initExporter({
+    ui,
+    getState: () => ({ width, height, minRe, maxRe, minIm, maxIm, currentFractalType, maxIter, juliaCr, juliaCi, paletteOffset, initialReWidth }),
+    workerPath: './fractal-worker.js',
+    maxDim: 8000
+  });
+
   // Load About content from `about-this-toy.md` in this folder (preferred).
   // If fetch fails (e.g., running from filesystem preview), fall back to a hard-coded
   // HTML snippet so the modal still works.
@@ -740,252 +750,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     exportBtn.addEventListener('click', async () => {
       try {
-        ui.showToast('Preparing high-quality export...', 'info');
-
-        // Determine export scale based on user setting
-        const q = localStorage.getItem('exportQuality') || 'hd';
-        const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
-        let exportScale = 1;
-        if (q === 'hd') exportScale = dpr;
-        else if (q === 'ultra') exportScale = Math.min(4, dpr * 2); // cap multiplier (~2× DPR)
-        else if (q === 'ultra4') exportScale = 4; // explicit 4× export quality
-
-        let targetW = Math.max(1, Math.floor(width * exportScale));
-        let targetH = Math.max(1, Math.floor(height * exportScale));
-
-        // Safety cap for dimensions to avoid memory issues (for very large screens)
-        const MAX_DIM = 8000;
-        if (targetW > MAX_DIM || targetH > MAX_DIM) {
-          const scaleFactor = Math.min(MAX_DIM / targetW, MAX_DIM / targetH);
-          targetW = Math.max(1, Math.floor(targetW * scaleFactor));
-          targetH = Math.max(1, Math.floor(targetH * scaleFactor));
-          ui.showToast('Export downscaled for performance', 'warn');
-        }
-
-        // Create an offscreen canvas to receive high-res bands
-        const exportCanvas = document.createElement('canvas');
-        exportCanvas.width = targetW;
-        exportCanvas.height = targetH;
-        const ectx = exportCanvas.getContext('2d', { alpha: false });
-
-        // Use a dedicated worker to render at the desired resolution so we don't disrupt the main UI worker
-        const expWorker = new Worker('./fractal-worker.js');
-
-        // Track received bands
-        const receivedBands = new Set();
-        let rowsAccum = 0;
-
-        const onMessage = (ev) => {
-          const { id: rid, width: w, height: h, yStart, bandHeight, buffer } = ev.data || {};
-          // Draw band into export canvas; worker will send all bands for this render
-          if (w !== targetW || h !== targetH) return;
-
-          const pixels = new Uint8ClampedArray(buffer);
-          const img = new ImageData(pixels, w, bandHeight);
-          ectx.putImageData(img, 0, yStart);
-
-          // Record band and check for completion
-          const key = `${yStart}:${bandHeight}`;
-          if (!receivedBands.has(key)) {
-            receivedBands.add(key);
-            rowsAccum += bandHeight;
-          }
-
-          if (rowsAccum >= h) {
-            // Finished; export to blob
-            expWorker.removeEventListener('message', onMessage);
-            setTimeout(() => {
-              exportCanvas.toBlob(async (blob) => {
-                if (!blob) {
-                  ui.showToast('Export failed', 'error');
-                  expWorker.terminate();
-                  return;
-                }
-
-                // Build metadata and short filename
-                const zoom = (initialReWidth / (maxRe - minRe)) || 1;
-                const meta = {
-                  fractal: currentFractalType,
-                  zoom: Number(zoom.toFixed(2)),
-                  bounds: { minRe, maxRe, minIm, maxIm },
-                  maxIter, juliaCr, juliaCi, paletteOffset
-                };
-
-                const base = `${currentFractalType}-${zoom.toFixed(2)}x`;
-                const fname = `${base}.png`;
-
-                try {
-                  const ab = await blob.arrayBuffer();
-                  const newAb = embedPngITXt(ab, 'FractalMeta', JSON.stringify(meta));
-                  const newBlob = new Blob([newAb], { type: 'image/png' });
-
-                  const url = URL.createObjectURL(newBlob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = fname;
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
-                  URL.revokeObjectURL(url);
-
-                  ui.showToast('Export saved (PNG with metadata)', 'success');
-                } catch (err) {
-                  console.error('Embedding metadata failed', err);
-                  // fallback: download raw PNG + metadata file
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = fname;
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
-                  URL.revokeObjectURL(url);
-
-                  const metaBlob = new Blob([JSON.stringify(meta, null, 2)], { type: 'application/json' });
-                  const metaUrl = URL.createObjectURL(metaBlob);
-                  const am = document.createElement('a');
-                  am.href = metaUrl;
-                  am.download = `${base}.json`;
-                  document.body.appendChild(am);
-                  am.click();
-                  am.remove();
-                  URL.revokeObjectURL(metaUrl);
-
-                  ui.showToast('Export saved (metadata separate)', 'warn');
-                }
-                expWorker.terminate();
-              }, 'image/png');
-            }, 20);
-          }
-        };
-
-        expWorker.addEventListener('message', onMessage);
-
-        // Send render request to worker
-        expWorker.postMessage({
-          id: 'export',
-          width: targetW,
-          height: targetH,
-          minRe, maxRe, minIm, maxIm,
-          maxIter,
-          fractalType: currentFractalType,
-          juliaCr,
-          juliaCi,
-          paletteOffset
-        });
-
+        await exportScreenshot();
       } catch (err) {
         console.error('Export failed', err);
-        ui.showToast('Export failed', 'error');
+        ui.showToast(err && err.message ? err.message : 'Export failed', 'error');
       }
     });
-
-    // Helper: embed UTF-8 metadata into PNG ArrayBuffer using an iTXt chunk
-    function embedPngITXt(arrayBuffer, keyword, text) {
-      // Parse PNG chunks and insert iTXt before IEND
-      const dv = new DataView(arrayBuffer);
-      // PNG signature is 8 bytes; verification omitted (we assume valid PNG)
-
-      // Walk chunks
-      const chunks = [];
-      let offset = 8; // skip signature
-      while (offset < dv.byteLength) {
-        const len = dv.getUint32(offset, false); // big-endian
-        const type = String.fromCharCode(
-          dv.getUint8(offset + 4), dv.getUint8(offset + 5), dv.getUint8(offset + 6), dv.getUint8(offset + 7)
-        );
-        const dataStart = offset + 8;
-        const dataEnd = dataStart + len;
-        const crcStart = dataEnd;
-        const crcEnd = crcStart + 4;
-        chunks.push({ type, offset, len, dataStart, dataEnd, crcStart, crcEnd });
-        offset = crcEnd;
-        if (type === 'IEND') break;
-      }
-
-      // Build iTXt chunk data per spec: keyword\0 compressionFlag(0) compressionMethod(0) languageTag\0 translatedKeyword\0 text(utf8)
-      const encoder = new TextEncoder();
-      const keywordBytes = encoder.encode(keyword);
-      const textBytes = encoder.encode(text);
-      const parts = [];
-      parts.push(keywordBytes);
-      parts.push(new Uint8Array([0])); // null separator
-      parts.push(new Uint8Array([0])); // compression flag 0
-      parts.push(new Uint8Array([0])); // compression method 0
-      parts.push(new Uint8Array([0])); // empty language tag + null
-      parts.push(new Uint8Array([0])); // empty translated keyword + null
-      parts.push(textBytes);
-
-      // Compute total length
-      let dataLen = 0;
-      for (const p of parts) dataLen += p.length;
-      const itxt = new Uint8Array(dataLen);
-      let pos = 0;
-      for (const p of parts) { itxt.set(p, pos); pos += p.length; }
-
-      // Build chunk: length(4) + type(4) + data + crc(4)
-      const typeBytes = encoder.encode('iTXt');
-      const chunkLen = itxt.length;
-      const chunkBuffer = new ArrayBuffer(8 + chunkLen + 4);
-      const chunkDv = new DataView(chunkBuffer);
-      // length
-      chunkDv.setUint32(0, chunkLen, false);
-      // type
-      for (let i = 0; i < 4; i++) chunkDv.setUint8(4 + i, typeBytes[i]);
-      // data
-      const chunkUint8 = new Uint8Array(chunkBuffer);
-      chunkUint8.set(itxt, 8);
-
-      // compute CRC over type+data
-      // CRC table (crc32) implementation
-      function crc32(buf) {
-        let crc = 0xffffffff;
-        for (let i = 0; i < buf.length; i++) {
-          crc = (crc >>> 8) ^ crcTable[(crc ^ buf[i]) & 0xff];
-        }
-        return (crc ^ 0xffffffff) >>> 0;
-      }
-
-      // build crc table once
-      const crcTable = (function makeCrcTable() {
-        const table = new Uint32Array(256);
-        for (let n = 0; n < 256; n++) {
-          let c = n;
-          for (let k = 0; k < 8; k++) {
-            if (c & 1) c = 0xedb88320 ^ (c >>> 1);
-            else c = c >>> 1;
-          }
-          table[n] = c >>> 0;
-        }
-        return table;
-      })();
-
-      // Prepare bytes for CRC = type(4) + data
-      const crcBuf = new Uint8Array(4 + itxt.length);
-      // type
-      crcBuf.set(typeBytes, 0);
-      // data
-      crcBuf.set(itxt, 4);
-
-      const crc = crc32(crcBuf);
-      // set CRC at end
-      chunkDv.setUint32(8 + chunkLen, crc, false);
-
-      // Now construct new PNG: original up to before IEND, then our chunk, then IEND chunk and trailing
-      const iendChunk = chunks.find(c => c.type === 'IEND');
-      if (!iendChunk) return arrayBuffer; // invalid PNG
-
-      const beforeIend = new Uint8Array(arrayBuffer, 0, iendChunk.offset);
-      const iendAndAfter = new Uint8Array(arrayBuffer, iendChunk.offset);
-
-      const out = new Uint8Array(beforeIend.length + chunkBuffer.byteLength + iendAndAfter.length);
-      let o = 0;
-      out.set(beforeIend, o); o += beforeIend.length;
-      out.set(new Uint8Array(chunkBuffer), o); o += chunkBuffer.byteLength;
-      out.set(iendAndAfter, o);
-
-      return out.buffer;
-    }
   })();
 
   ui.createZoomFooter({

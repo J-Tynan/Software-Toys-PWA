@@ -1,5 +1,5 @@
 const CACHE_NAME = 'pwa-toy-cache-v2';
-const urlsToCache = ['index.html', 'styles.css', 'script.js'];
+const urlsToCache = ['index.html', 'styles.css', 'main.js'];
 
 // Install: pre-cache core assets
 self.addEventListener('install', (event) => {

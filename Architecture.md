@@ -32,6 +32,7 @@ This document defines the file layout, separation of concerns, startup ordering,
 * `renderer.js` Worker orchestration and public renderer API
 * `worker.js` Heavy compute for rendering
 * `visualizations.js` Canvas helpers and coordinate transforms
+* `exporter.js` Computes and exports high-resolution screenshots of render.
 * `styles.css` Toy-specific CSS
 * `manifest.json` and `service-worker.js` Per-toy PWA artifacts
 * `assets/` Icons and previews
@@ -97,6 +98,15 @@ html, body { height: 100%; margin: 0; }
 ** Worker created once
 ** Wheel handler attached to canvas
 * Run lint and smoke tests on PRs.
+
+Local smoke test runner:
+
+- Start a local static server at the repo root: `npm run serve` (uses `http-server` on port 8000)
+- Run the smoke tests once the server is up: `npm run test:smoke`
+
+CI:
+
+- A GitHub Actions workflow `smoke-tests.yml` runs on pushes and PRs to `main` and executes the smoke tests headlessly.
 
 ---
 

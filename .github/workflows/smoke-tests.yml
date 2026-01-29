@@ -1,0 +1,27 @@
+name: smoke-tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Start static server
+        run: npx http-server -c-1 -p 8000 &
+      - name: Wait for server
+        run: npx wait-on http://localhost:8000/fractal-explorer/index.html --timeout 10000
+      - name: Run smoke tests
+        run: npx playwright test tests/smoke --project=chromium --reporter=list

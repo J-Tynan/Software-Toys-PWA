@@ -9,7 +9,13 @@
 // Top Header Bar
 // ------------------------------------------------------------
 function createHeader(title) {
+  console.debug('createHeader called with title:', title);
+  // Idempotent: return existing header if present
+  let existing = document.getElementById('fe-header');
+  if (existing) { console.debug('createHeader: returning existing header'); return existing; }
+
   const header = document.createElement('div');
+  header.id = 'fe-header';
   header.className =
     'fixed top-0 left-0 right-0 z-20 bg-base-100 shadow-md h-12';
 
@@ -68,6 +74,14 @@ function createHeader(title) {
   `;
 
   document.body.appendChild(header);
+
+  // Expose header height as a CSS var for toys that prefer CSS-driven layout
+  function updateHeaderHeightCSS() {
+    const rect = header.getBoundingClientRect();
+    document.body.style.setProperty('--header-height', Math.round(rect.height) + 'px');
+  }
+  updateHeaderHeightCSS();
+  window.addEventListener('resize', updateHeaderHeightCSS);
 
   // Smart tooltip positioning
   function setTooltipDirections() {
@@ -313,7 +327,11 @@ function createHeader(title) {
 // Zoom Footer (Opt-in)
 // ------------------------------------------------------------
 function createZoomFooter({ onZoomIn, onZoomOut }) {
+  // Idempotent: single zoom footer per document
+  let existing = document.getElementById('zoom-footer');
+  if (existing) return existing;
   const footer = document.createElement('div');
+  footer.id = 'zoom-footer';
   footer.className =
     'fixed bottom-0 left-0 right-0 z-20 bg-base-200 border-t border-base-300';
   // Use CSS custom properties to expose footer height for toys if needed
@@ -352,6 +370,15 @@ function createZoomFooter({ onZoomIn, onZoomOut }) {
   });
 
   document.body.appendChild(footer);
+
+  // Expose footer height as a CSS var so toys can compute layout by CSS if preferred
+  function updateFooterHeightCSS() {
+    const rect = footer.getBoundingClientRect();
+    document.body.style.setProperty('--footer-height', Math.round(rect.height) + 'px');
+  }
+  updateFooterHeightCSS();
+  window.addEventListener('resize', updateFooterHeightCSS);
+
   return footer;
 }
 
@@ -787,6 +814,8 @@ function showToast(message, type = 'info', opts = {}) {
 // Export API
 // ------------------------------------------------------------
 window.ui = window.ui || {};
+// Shared API version for basic compatibility checks
+window.ui.SHARED_API_VERSION = '1.0';
 Object.assign(window.ui, {
   createHeader,
   createZoomFooter,
@@ -804,6 +833,21 @@ Object.assign(window.ui, {
 
   showToast
 });
+
+// Development-only testing hooks (exposed under window.__TEST__)
+window.__TEST__ = window.__TEST__ || {};
+window.__TEST__.getHeaderCount = () => document.querySelectorAll('.fixed.top-0').length;
+window.__TEST__.getFooterCount = () => document.querySelectorAll('.fixed.bottom-0').length;
+window.__TEST__.getCanvasComputedStyle = () => {
+  const c = document.getElementById('canvas');
+  if (!c) return null;
+  const cs = getComputedStyle(c);
+  return {
+    position: cs.position,
+    width: cs.width,
+    height: cs.height
+  };
+};
 
 // Create custom settings modal (for per-toy options)
 function createSettingsModal(contentHtml) {
