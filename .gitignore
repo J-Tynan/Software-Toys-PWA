@@ -44,9 +44,14 @@ Thumbs.db
 .env
 .env.*
 
+# Test files and folders
+tests/
+test-results/
+
 # Misc
 .cache/
 *.log
+Temp/
 
 # Lockfiles (if you prefer not to commit lockfile, uncomment)
 # package-lock.json
