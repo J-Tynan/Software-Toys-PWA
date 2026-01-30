@@ -1,7 +1,7 @@
 // Shared UI functions using DaisyUI classes
 // ------------------------------------------------------------
 // This file provides reusable UI primitives for all software toys.
-// Toys opt-in to features they need (header, zoom footer, settings panel).
+// Toys opt-in to features they need (header UI, footer UI, settings panel).
 // No toy-specific logic lives here.
 // ------------------------------------------------------------
 
@@ -59,12 +59,6 @@ function createHeader(title) {
           <div class="swap-off">☀️</div>
         </label>
 
-        <label class="swap swap-rotate tooltip flex items-center" data-tip="Sound">
-          <input type="checkbox" id="sound-toggle" ${utils.isSoundEnabled() ? 'checked' : ''} />
-          <div class="swap-on">🔊</div>
-          <div class="swap-off">🔇</div>
-        </label>
-
         <button id="settings-btn" class="btn btn-xs btn-ghost tooltip" data-tip="Settings">
           ⚙️
         </button>
@@ -113,6 +107,7 @@ function createHeader(title) {
 
   function initHeaderThemeToggle() {
     const systemOn = localStorage.getItem('systemThemeEnabled') === 'true';
+    if (!themeToggle) return;
     if (systemOn) {
       // Follow system preference (disable manual toggle)
       themeToggle.checked = headerMediaQuery.matches;
@@ -123,17 +118,17 @@ function createHeader(title) {
     }
   }
 
-  initHeaderThemeToggle();
+  if (themeToggle) initHeaderThemeToggle();
 
   // If system preference changes and system-follow is enabled, update UI
   headerMediaQuery.addEventListener('change', () => {
     if (localStorage.getItem('systemThemeEnabled') === 'true') {
-      themeToggle.checked = headerMediaQuery.matches;
+      if (themeToggle) themeToggle.checked = headerMediaQuery.matches;
       document.documentElement.setAttribute('data-theme', headerMediaQuery.matches ? 'luxury' : 'emerald');
     }
   });
 
-  themeToggle.addEventListener('change', e => {
+  if (themeToggle) themeToggle.addEventListener('change', e => {
     // When user manually toggles theme, turn off system-follow and persist choice
     localStorage.setItem('systemThemeEnabled', 'false');
     const settingsSystemToggle = document.getElementById('global-system-theme-toggle');
@@ -160,13 +155,15 @@ function createHeader(title) {
     initHeaderThemeToggle();
   });
 
-  // Sound toggle
-  document.getElementById('sound-toggle').addEventListener('change', e => {
+  // Sound toggle (header control removed) — guard listener in case element exists
+  const headerSoundToggle = document.getElementById('sound-toggle');
+  if (headerSoundToggle) headerSoundToggle.addEventListener('change', e => {
     utils.toggleSound(e.target.checked);
   });
 
   // Fullscreen
-  document.getElementById('fullscreen-btn').addEventListener('click', () => {
+  const fullscreenBtn = document.getElementById('fullscreen-btn');
+  if (fullscreenBtn) fullscreenBtn.addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
   });
@@ -174,7 +171,8 @@ function createHeader(title) {
   // Info button opens a modal. If a modal hasn't been created by the toy,
   // we create a default one on-demand so the UI layer stays simple and the
   // toy can opt-in to provide rich HTML content by calling `ui.createInfoModal(...)`.
-  document.getElementById('info-btn').addEventListener('click', () => {
+  const infoBtn = document.getElementById('info-btn');
+  if (infoBtn) infoBtn.addEventListener('click', () => {
     let modal = document.getElementById('info-modal');
     if (!modal) modal = createInfoModal(); // create with sensible default
     if (!document.body.contains(modal)) document.body.appendChild(modal);
@@ -201,7 +199,8 @@ function createHeader(title) {
   };
 
   // Home navigation
-  document.getElementById('home-btn').addEventListener('click', () => {
+  const homeBtn = document.getElementById('home-btn');
+  if (homeBtn) homeBtn.addEventListener('click', () => {
     window.location.href = '../index.html';
   });
 
@@ -624,14 +623,16 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
     });
   }
 
-  panel.querySelector('#settings-sound').addEventListener('change', e => {
+  const settingsSound = panel.querySelector('#settings-sound');
+  if (settingsSound) settingsSound.addEventListener('change', e => {
     utils.toggleSound(e.target.checked);
 
     const headerSoundToggle = document.getElementById('sound-toggle');
     if (headerSoundToggle) headerSoundToggle.checked = e.target.checked;
   });
 
-  panel.querySelector('#settings-vibration').addEventListener('change', e => {
+  const settingsVibration = panel.querySelector('#settings-vibration');
+  if (settingsVibration) settingsVibration.addEventListener('change', e => {
     localStorage.setItem('vibrationEnabled', e.target.checked);
   });
 
@@ -681,7 +682,8 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
     panel.classList.add('hidden');
   }
 
-  panel.querySelector('#close-settings').addEventListener('click', closePanel);
+  const closeSettingsBtn = panel.querySelector('#close-settings');
+  if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closePanel);
 
   panel.querySelector(':scope > div.absolute.inset-0')
     ?.addEventListener('click', closePanel);

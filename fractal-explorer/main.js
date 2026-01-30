@@ -1122,7 +1122,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.showToast(`Demo: ${demo.label}`, 'info');
   });
 
-  document.getElementById('reset-btn').addEventListener('click', () => {
+  const resetBtn = document.getElementById('reset-btn');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
     // Restore to the captured startup view if available, otherwise fall back to default
     const restored = restoreStartupView(currentFractalType);
     if (!restored) {
