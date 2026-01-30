@@ -50,6 +50,7 @@
   </dialog>
 
   <script src="shared/utils.js"></script> <!-- Extend for global settings below -->
+  <script src="shared/ui.js"></script> <!-- Shared UI primitives (header, settings panel, etc) -->
   <script>
     // Toy data (easy to add more later)
     // TODO: Expand each toy object with richer descriptions and links for the info modal
@@ -182,36 +183,62 @@
     }
 
     // Global Settings: use the shared Settings panel instead of a modal
-    const homepageSettingsPanel = (window.ui && typeof window.ui.createSettingsPanel === 'function')
-      ? window.ui.createSettingsPanel({ showFractalSelection: false, extraTopHtml: `
-          <label class="label cursor-pointer flex justify-between">
-            <span>Dark Theme</span>
-            <input type="checkbox" id="global-theme-toggle-panel" class="toggle" />
-          </label>
-        ` })
-      : null;
+    // Lazily create the panel when the user clicks the settings button. If the shared UI is
+    // not present, fallback to a console warning so clicks are no-ops but don't throw.
+    const _globalSettingsBtn = document.getElementById('global-settings-btn');
+    let homepageSettingsPanel = null;
 
-    document.getElementById('global-settings-btn').addEventListener('click', () => {
-      if (!homepageSettingsPanel) return;
-      homepageSettingsPanel.classList.remove('hidden');
+    if (_globalSettingsBtn) {
+      _globalSettingsBtn.addEventListener('click', () => {
+        if (!window.ui || typeof window.ui.createSettingsPanel !== 'function') {
+          console.warn('Settings panel unavailable: window.ui.createSettingsPanel is not present.');
+          return;
+        }
 
-      // Sync theme toggle into the panel
-      const themeToggle = homepageSettingsPanel.querySelector('#global-theme-toggle-panel');
-      if (themeToggle) {
-        themeToggle.checked = utils.getGlobalTheme() === 'luxury';
-        themeToggle.addEventListener('change', (e) => {
-          localStorage.setItem('systemThemeEnabled', 'false');
-          localStorage.setItem('globalTheme', e.target.checked ? 'luxury' : 'emerald');
-          utils.applyGlobalTheme();
-        });
-      }
+        // Create once and cache for reuse
+        if (!homepageSettingsPanel) {
+          homepageSettingsPanel = window.ui.createSettingsPanel({ showFractalSelection: false, extraTopHtml: `
+            <label class="label cursor-pointer flex justify-between">
+              <span>Dark Theme</span>
+              <input type="checkbox" id="global-theme-toggle-panel" class="toggle" />
+            </label>
+          ` });
 
-      // Sync other controls
-      const settingsVibration = homepageSettingsPanel.querySelector('#settings-vibration');
-      if (settingsVibration) settingsVibration.checked = utils.isVibrationEnabled();
-      const settingsShowFps = homepageSettingsPanel.querySelector('#settings-show-fps');
-      if (settingsShowFps) settingsShowFps.checked = utils.isShowFps();
-    });
+          // As a safety, ensure it's in the body (some implementations may return a detached node)
+          if (homepageSettingsPanel && !document.body.contains(homepageSettingsPanel)) {
+            document.body.appendChild(homepageSettingsPanel);
+          }
+
+          // If creation unexpectedly failed, warn and bail
+          if (!homepageSettingsPanel) {
+            console.warn('createSettingsPanel returned null or undefined.');
+            return;
+          }
+
+          // Wire controls once (created-time wiring)
+          const themeToggle = homepageSettingsPanel.querySelector('#global-theme-toggle-panel');
+          if (themeToggle) {
+            themeToggle.checked = utils.getGlobalTheme() === 'luxury';
+            themeToggle.addEventListener('change', (e) => {
+              localStorage.setItem('systemThemeEnabled', 'false');
+              localStorage.setItem('globalTheme', e.target.checked ? 'luxury' : 'emerald');
+              utils.applyGlobalTheme();
+            });
+          }
+        }
+
+        // Show and focus close button
+        homepageSettingsPanel.classList.remove('hidden');
+        const closeBtn = homepageSettingsPanel.querySelector('#close-settings');
+        if (closeBtn) closeBtn.focus();
+
+        // Sync other controls that may change between opens
+        const settingsVibration = homepageSettingsPanel.querySelector('#settings-vibration');
+        if (settingsVibration) settingsVibration.checked = utils.isVibrationEnabled();
+        const settingsShowFps = homepageSettingsPanel.querySelector('#settings-show-fps');
+        if (settingsShowFps) settingsShowFps.checked = utils.isShowFps();
+      });
+    }
 
     // Ensure theme reflects current values
     utils.applyGlobalTheme();
