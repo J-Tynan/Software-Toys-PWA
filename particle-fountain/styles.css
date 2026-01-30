@@ -1,0 +1,6 @@
+/* Particle Fountain toy-specific styles */
+#canvas { position: absolute; left: 0; right: 0; top: var(--header-height, 0); bottom: var(--footer-height, 0); background: radial-gradient(ellipse at center, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.05) 100%); }
+
+/* Small helper for focus outlines and accessible large-touch targets */
+.btn { outline-offset: 2px; }
+.pf-controls { padding: 0.5rem; }

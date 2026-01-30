@@ -27,34 +27,8 @@
   <!-- Toy Container: Dynamically switches between card/list -->
   <div id="toys-container" class="flex-1 p-8"></div>
 
-  <!-- Global Settings Modal -->
-  <dialog id="global-settings-modal" class="modal">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg mb-4">Global Settings</h3>
-      <div class="form-control">
-        <label class="label cursor-pointer">
-          <span class="label-text">Sound Effects</span>
-          <input type="checkbox" id="global-sound-toggle" class="toggle toggle-primary" />
-        </label>
-        <label class="label cursor-pointer">
-          <span class="label-text">Vibration (Haptics)</span>
-          <input type="checkbox" id="global-vibration-toggle" class="toggle toggle-primary" />
-        </label>
-        <label class="label cursor-pointer">
-          <span class="label-text">Dark Theme</span>
-          <input type="checkbox" id="global-theme-toggle" class="toggle toggle-primary" />
-        </label>
-
-        <label class="label cursor-pointer">
-          <span class="label-text">Show FPS</span>
-          <input type="checkbox" id="global-show-fps" class="toggle toggle-primary" />
-        </label>
-      </div>
-      <div class="modal-action">
-        <button class="btn" onclick="document.getElementById('global-settings-modal').close()">Close</button>
-      </div>
-    </div>
-  </dialog>
+  <!-- Global Settings Panel (uses shared/ui.createSettingsPanel) -->
+  <!-- Replaced modal dialog with a shared Settings pane to match CONTRACTS.md. The panel is created at runtime and appended to <body>. -->
 
   <!-- Toy Info Modal -->
   <!-- TODO: This modal is populated dynamically in showToyInfo(). Add more sections like images or videos if needed. -->
@@ -207,61 +181,40 @@
       }, { once: true });
     }
 
-    // Global Settings Modal Logic
-    const settingsModal = document.getElementById('global-settings-modal');
+    // Global Settings: use the shared Settings panel instead of a modal
+    const homepageSettingsPanel = (window.ui && typeof window.ui.createSettingsPanel === 'function')
+      ? window.ui.createSettingsPanel({ showFractalSelection: false, extraTopHtml: `
+          <label class="label cursor-pointer flex justify-between">
+            <span>Dark Theme</span>
+            <input type="checkbox" id="global-theme-toggle-panel" class="toggle" />
+          </label>
+        ` })
+      : null;
+
     document.getElementById('global-settings-btn').addEventListener('click', () => {
-      settingsModal.showModal();
-      document.documentElement.style.overflow = 'hidden';
-      document.documentElement.style.position = 'fixed';
-      document.documentElement.style.width = '100%';
-      document.documentElement.style.height = '100%';
-      settingsModal.addEventListener('close', () => {
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.position = '';
-        document.documentElement.style.width = '';
-        document.documentElement.style.height = '';
-      }, { once: true });
+      if (!homepageSettingsPanel) return;
+      homepageSettingsPanel.classList.remove('hidden');
+
+      // Sync theme toggle into the panel
+      const themeToggle = homepageSettingsPanel.querySelector('#global-theme-toggle-panel');
+      if (themeToggle) {
+        themeToggle.checked = utils.getGlobalTheme() === 'luxury';
+        themeToggle.addEventListener('change', (e) => {
+          localStorage.setItem('systemThemeEnabled', 'false');
+          localStorage.setItem('globalTheme', e.target.checked ? 'luxury' : 'emerald');
+          utils.applyGlobalTheme();
+        });
+      }
+
+      // Sync other controls
+      const settingsVibration = homepageSettingsPanel.querySelector('#settings-vibration');
+      if (settingsVibration) settingsVibration.checked = utils.isVibrationEnabled();
+      const settingsShowFps = homepageSettingsPanel.querySelector('#settings-show-fps');
+      if (settingsShowFps) settingsShowFps.checked = utils.isShowFps();
     });
 
-    // Load saved global settings
-    document.getElementById('global-sound-toggle').checked = utils.isSoundEnabled(); // From shared utils
-      document.getElementById('global-vibration-toggle').checked = utils.isVibrationEnabled();
-    // Initialize toggles and apply theme via shared helper
+    // Ensure theme reflects current values
     utils.applyGlobalTheme();
-
-    // Save on change
-    document.getElementById('global-sound-toggle').addEventListener('change', (e) => utils.toggleSound(e.target.checked));
-    document.getElementById('global-vibration-toggle').addEventListener('change', (e) => localStorage.setItem('vibrationEnabled', e.target.checked));
-    document.getElementById('global-theme-toggle').addEventListener('change', (e) => {
-      // Manual selection should turn off system-follow (we no longer expose a homepage "Follow System" toggle)
-      localStorage.setItem('systemThemeEnabled', 'false');
-      document.getElementById('global-theme-toggle').disabled = false;
-      localStorage.setItem('globalTheme', e.target.checked ? 'luxury' : 'emerald');
-      utils.applyGlobalTheme();
-    });
-
-    // GLOBAL: Show FPS toggle - sync immediate behavior across the app
-    const globalShowFps = document.getElementById('global-show-fps');
-    if (globalShowFps) {
-      globalShowFps.checked = utils.isShowFps();
-      globalShowFps.addEventListener('change', (e) => {
-        const val = e.target.checked;
-        localStorage.setItem('showFps', val);
-        // Update any other controls on the page
-        document.querySelectorAll('#settings-show-fps').forEach(el => el.checked = val);
-
-        // If overlay isn't ready, retry for a short period
-        let attempts = 0;
-        const trySet = () => {
-          if (window.ui && typeof window.ui.setFpsEnabled === 'function') {
-            window.ui.setFpsEnabled(!!val);
-          } else if (++attempts < 10) {
-            setTimeout(trySet, 100);
-          }
-        };
-        trySet();
-      });
-    }
 
     // Ensure theme reflects current values
     utils.applyGlobalTheme();

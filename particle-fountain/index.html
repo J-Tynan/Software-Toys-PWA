@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Particle Fountain</title>
+  <!-- Tailwind CDN + DaisyUI (dev convenience) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { plugins: [window.daisyui], theme: { extend: {} } };
+  </script>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="../shared/styles-extra.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="loading-overlay" class="fixed inset-0 z-40 bg-base-200/80 flex items-center justify-center">Loading Particle Fountain…</div>
+
+  <canvas id="canvas" role="application" aria-label="Particle Fountain canvas" aria-describedby="canvas-desc" class="absolute left-0 right-0" width="800" height="600"></canvas>
+  <div id="canvas-desc" class="sr-only">Interactive particle playground. Use touch or mouse to pan and pinch or wheel to zoom.</div>
+
+  <noscript>
+    <p class="p-4">This demo requires JavaScript to run. Please enable JavaScript in your browser.</p>
+  </noscript>
+
+  <!-- Shared helpers (attach to window.utils and window.ui) -->
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/ui.js"></script>
+
+  <!-- Toy entry (ESM) -->
+  <script type="module" src="./main.js"></script>
+
+  <script>
+    // Register service worker if available
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js').catch(e => console.warn('SW registration failed', e));
+    }
+  </script>
+</body>
+</html>
