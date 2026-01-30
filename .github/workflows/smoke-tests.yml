@@ -23,5 +23,11 @@ jobs:
         run: npx http-server -c-1 -p 8000 &
       - name: Wait for server
         run: npx wait-on http://localhost:8000/fractal-explorer/index.html --timeout 10000
+      - name: Enforce shared API version and per-toy checks
+        run: |
+          if ! grep -q "window.ui.SHARED_API_VERSION = '2.0'" shared/ui.js; then echo "SHARED_API_VERSION != 2.0" && exit 1; fi
+          if ! grep -q "process.env.NODE_ENV" shared/ui.js; then echo "Test hooks not gated by NODE_ENV" && exit 1; fi
+          if ! grep -q "assertSharedApiVersion('2.0')" fractal-explorer/main.js; then echo "fractal-explorer main missing SHARED_API_VERSION check" && exit 1; fi
+          if ! grep -q "assertSharedApiVersion('2.0')" particle-fountain/main.js; then echo "particle-fountain main missing SHARED_API_VERSION check" && exit 1; fi
       - name: Run smoke tests
         run: npx playwright test tests/smoke --project=chromium --reporter=list

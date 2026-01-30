@@ -30,23 +30,73 @@ function getThemeColor(varName) {
   return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
 }
 
-// Sound toggle storage (localStorage for persistence across toys/sessions)
-// Default: OFF (requires user opt-in)
-function isSoundEnabled() {
-  return localStorage.getItem('soundEnabled') === 'true';
-}
+// Centralized settings keys and helpers
+const SETTINGS_KEYS = {
+  SOUND: 'soundEnabled',
+  SHOW_FPS: 'showFps',
+  EXPORT_QUALITY: 'exportQuality',
+  VIBRATION: 'vibrationEnabled',
+  GLOBAL_THEME: 'globalTheme',
+  SYSTEM_THEME: 'systemThemeEnabled'
+};
 
+// Sound helpers
+function isSoundEnabled() {
+  return localStorage.getItem(SETTINGS_KEYS.SOUND) === 'true';
+}
+function setSoundEnabled(enable) {
+  localStorage.setItem(SETTINGS_KEYS.SOUND, !!enable);
+}
 function toggleSound(enable) {
-  // Store explicit true/false
-  localStorage.setItem('soundEnabled', !!enable);
+  setSoundEnabled(enable);
   // Optional: Vibrate if supported and enabled (for mobile PWAs)
   if (enable && 'vibrate' in navigator) {
     navigator.vibrate(50); // Short haptic feedback
   }
 }
 
-// Export for use in other scripts (though since we're vanilla, we'll use globals or just call them)
-window.utils = { random, hexToRgb, lerp, easeInOutQuad, getThemeColor, isSoundEnabled, toggleSound };
+// Show FPS
+function isShowFps() {
+  return localStorage.getItem(SETTINGS_KEYS.SHOW_FPS) === 'true';
+}
+function setShowFps(enable) {
+  localStorage.setItem(SETTINGS_KEYS.SHOW_FPS, !!enable);
+}
+
+// Export quality
+function getExportQuality() {
+  return localStorage.getItem(SETTINGS_KEYS.EXPORT_QUALITY) || 'hd';
+}
+function setExportQuality(val) {
+  localStorage.setItem(SETTINGS_KEYS.EXPORT_QUALITY, val);
+}
+
+// Theme helpers
+function getGlobalTheme() {
+  return localStorage.getItem(SETTINGS_KEYS.GLOBAL_THEME);
+}
+function setGlobalTheme(val) {
+  localStorage.setItem(SETTINGS_KEYS.GLOBAL_THEME, val);
+}
+function isSystemThemeEnabled() {
+  return localStorage.getItem(SETTINGS_KEYS.SYSTEM_THEME) === 'true';
+}
+function setSystemThemeEnabled(enable) {
+  localStorage.setItem(SETTINGS_KEYS.SYSTEM_THEME, !!enable);
+}
+
+// Export for use in other scripts
+window.utils = Object.assign(window.utils || {}, {
+  random, hexToRgb, lerp, easeInOutQuad, getThemeColor,
+  // sound
+  isSoundEnabled, setSoundEnabled, toggleSound,
+  // fps
+  isShowFps, setShowFps,
+  // export
+  getExportQuality, setExportQuality,
+  // theme
+  getGlobalTheme, setGlobalTheme, isSystemThemeEnabled, setSystemThemeEnabled
+});
 
 // Global vibration (haptics) - Check user preference before vibrating
 function isVibrationEnabled() {
@@ -61,22 +111,22 @@ function toggleVibration(enable) {
 
 // Load global theme on toy startup (overrides HTML default)
 function loadGlobalTheme() {
-  const savedTheme = localStorage.getItem('globalTheme');
+  const savedTheme = getGlobalTheme();
   if (savedTheme) {
     document.documentElement.setAttribute('data-theme', savedTheme);
   } else {
     // Fallback to emerald if nothing saved
     document.documentElement.setAttribute('data-theme', 'emerald');
   }
-}
+} 
 
 // Apply the saved theme or follow system preference when enabled
 function applyGlobalTheme() {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  const systemOn = localStorage.getItem('systemThemeEnabled') === 'true';
+  const systemOn = isSystemThemeEnabled();
   let theme;
   if (systemOn) theme = mediaQuery.matches ? 'luxury' : 'emerald';
-  else theme = localStorage.getItem('globalTheme') === 'luxury' ? 'luxury' : 'emerald';
+  else theme = getGlobalTheme() === 'luxury' ? 'luxury' : 'emerald';
 
   document.documentElement.setAttribute('data-theme', theme);
 
@@ -85,7 +135,7 @@ function applyGlobalTheme() {
 
   // Sync UI controls if present
   const globalThemeToggle = document.getElementById('global-theme-toggle');
-  if (globalThemeToggle) globalThemeToggle.checked = localStorage.getItem('globalTheme') === 'luxury';
+  if (globalThemeToggle) globalThemeToggle.checked = getGlobalTheme() === 'luxury';
 
   const systemToggle = document.getElementById('global-system-theme-toggle');
   if (systemToggle) systemToggle.checked = systemOn;
@@ -96,16 +146,16 @@ function applyGlobalTheme() {
       headerThemeToggle.checked = mediaQuery.matches;
       headerThemeToggle.disabled = true;
     } else {
-      headerThemeToggle.checked = localStorage.getItem('globalTheme') === 'luxury';
+      headerThemeToggle.checked = getGlobalTheme() === 'luxury';
       headerThemeToggle.disabled = false;
     }
   }
-}
+} 
 
 // React to system changes when following system theme
 const _systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 _systemMediaQuery.addEventListener('change', () => {
-  if (localStorage.getItem('systemThemeEnabled') === 'true') applyGlobalTheme();
+  if (isSystemThemeEnabled()) applyGlobalTheme();
 });
 
 // React to cross-window changes

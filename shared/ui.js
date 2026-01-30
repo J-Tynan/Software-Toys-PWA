@@ -106,14 +106,14 @@ function createHeader(title) {
   const headerMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
   function initHeaderThemeToggle() {
-    const systemOn = localStorage.getItem('systemThemeEnabled') === 'true';
+    const systemOn = utils.isSystemThemeEnabled();
     if (!themeToggle) return;
     if (systemOn) {
       // Follow system preference (disable manual toggle)
       themeToggle.checked = headerMediaQuery.matches;
       themeToggle.disabled = true;
     } else {
-      themeToggle.checked = localStorage.getItem('globalTheme') === 'luxury';
+      themeToggle.checked = utils.getGlobalTheme() === 'luxury';
       themeToggle.disabled = false;
     }
   }
@@ -122,7 +122,7 @@ function createHeader(title) {
 
   // If system preference changes and system-follow is enabled, update UI
   headerMediaQuery.addEventListener('change', () => {
-    if (localStorage.getItem('systemThemeEnabled') === 'true') {
+    if (utils.isSystemThemeEnabled()) {
       if (themeToggle) themeToggle.checked = headerMediaQuery.matches;
       document.documentElement.setAttribute('data-theme', headerMediaQuery.matches ? 'luxury' : 'emerald');
     }
@@ -315,11 +315,11 @@ function createHeader(title) {
   // Expose on ui
   window.ui = window.ui || {};
   window.ui.setFpsEnabled = setFpsEnabled;
-  window.ui.isFpsEnabled = () => localStorage.getItem('showFps') === 'true';
+  window.ui.isFpsEnabled = () => utils.isShowFps();
   window.ui.tickFrame = tickFrame; // toys call this to signal a completed render
 
   // Initialize based on persisted setting
-  if (localStorage.getItem('showFps') === 'true') setFpsEnabled(true);
+  if (utils.isShowFps()) setFpsEnabled(true);
 })();
 
 // ------------------------------------------------------------
@@ -500,102 +500,105 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
   panel.innerHTML = `
     <div class="absolute inset-0 bg-black/40"></div>
 
-    <div class="absolute right-0 top-0 h-full w-80 bg-base-200 p-4 shadow-lg overflow-y-auto">
-      <h2 class="text-lg font-bold mb-4">Settings</h2>
-
-      ${extraTopHtml}
-
-      ${showFractalSelection ? `<!-- Fractal Selection -->
-      <div class="mb-4">
-        <label class="label font-semibold">Fractal Type</label>
-        <select id="fractal-select" class="select select-bordered w-full">
-          ${fractals.map(f =>
-            `<option value="${f.id}" ${f.id === currentFractal ? 'selected' : ''}>${f.label}</option>`
-          ).join('')}
-        </select>
-        <p class="text-xs opacity-70 mt-1">
-          Changing the fractal resets the view.
-        </p>
-      </div>` : ''}
-
-      <!-- Mandelbrot Parameters -->
-      <div id="mandelbrot-settings" class="mb-4 hidden">
-        <label class="label font-semibold">Mandelbrot Settings</label>
-
-        <label class="label text-sm">Max Iterations: <span id="mandelbrot-maxiter-readout">100</span></label>
-        <input id="mandelbrot-maxiter" type="range" min="50" max="2000" step="10" class="range" value="100" />
-
-        <label class="label text-sm mt-2">Color Offset: <span id="mandelbrot-color-readout" class="opacity-80">0.00</span></label>
-        <input id="mandelbrot-color" type="range" min="0" max="1" step="0.01" class="range" value="0" />
-
-        <button id="mandelbrot-reset" class="btn btn-sm mt-2">Reset fractal</button>
+    <div class="absolute right-0 top-0 h-full w-80 bg-base-200 p-0 shadow-lg flex flex-col">
+      <div class="sticky top-0 bg-base-200 z-10 flex items-center justify-between gap-2 p-4 border-b border-base-300">
+        <h2 class="text-lg font-bold m-0">Settings</h2>
+        <button id="close-settings" class="btn btn-sm btn-ghost" aria-label="Close settings">✕</button>
       </div>
 
-      <!-- Julia Parameters -->
-      <div id="julia-settings" class="mb-4 hidden">
-        <label class="label font-semibold">Julia Parameters</label>
+      <div class="overflow-y-auto p-4" style="height: calc(100% - 3.5rem);">
+        ${extraTopHtml}
 
-        <label class="label text-sm">Real (Cr): <span id="julia-cr-readout" class="opacity-80">-0.800</span></label>
-        <input id="julia-cr" type="range" min="-1" max="1" step="0.001" class="range" />
-
-        <label class="label text-sm mt-2">Imaginary (Ci): <span id="julia-ci-readout" class="opacity-80">0.156</span></label>
-        <input id="julia-ci" type="range" min="-1" max="1" step="0.001" class="range" />
-
-        <button id="julia-reset" class="btn btn-sm mt-2">Reset fractal</button>
-      </div>
-
-      <!-- Burning Ship Parameters -->
-      <div id="burning-settings" class="mb-4 hidden">
-        <label class="label font-semibold">Burning Ship Settings</label>
-
-        <label class="label text-sm">Max Iterations: <span id="burning-maxiter-readout">100</span></label>
-        <input id="burning-maxiter" type="range" min="50" max="2000" step="10" class="range" value="100" />
-
-        <label class="label text-sm mt-2">Color Offset: <span id="burning-color-readout" class="opacity-80">0.00</span></label>
-        <input id="burning-color" type="range" min="0" max="1" step="0.01" class="range" value="0" />
-
-        <button id="burning-reset" class="btn btn-sm mt-2">Reset fractal</button>
-      </div>
-
-      <!-- Feedback -->
-      <div class="mb-3">
-        <label class="label cursor-pointer flex justify-between">
-          <span>Sound</span>
-          <input type="checkbox" id="settings-sound" class="toggle"
-            ${utils.isSoundEnabled() ? 'checked' : ''} />
-        </label>
-      </div>
-
-      <div class="mb-3">
-        <label class="label cursor-pointer flex justify-between">
-          <span>Show FPS</span>
-          <input type="checkbox" id="settings-show-fps" class="toggle" ${localStorage.getItem('showFps') === 'true' ? 'checked' : ''} />
-        </label>
-      </div>
-
-      <div class="mb-3">
-        <label class="label cursor-pointer flex justify-between">
-          <span>Export Quality</span>
-          <select id="settings-export-quality" class="select select-bordered w-40">
-            <option value="hd" ${localStorage.getItem('exportQuality') !== 'ultra' && localStorage.getItem('exportQuality') !== 'ultra4' ? 'selected' : ''}>HD (DPR)</option>
-            <option value="ultra" ${localStorage.getItem('exportQuality') === 'ultra' ? 'selected' : ''}>Ultra (2× DPR)</option>
-            <option value="ultra4" ${localStorage.getItem('exportQuality') === 'ultra4' ? 'selected' : ''}>Ultra 4× (4×)</option>
+        ${showFractalSelection ? `<!-- Fractal Selection -->
+        <div class="mb-4">
+          <label class="label font-semibold">Fractal Type</label>
+          <select id="fractal-select" class="select select-bordered w-full">
+            ${fractals.map(f =>
+              `<option value="${f.id}" ${f.id === currentFractal ? 'selected' : ''}>${f.label}</option>`
+            ).join('')}
           </select>
-        </label>
-        <p class="text-xs opacity-70 mt-1">Choose export quality for PNG downloads.</p>
+          <p class="text-xs opacity-70 mt-1">
+            Changing the fractal resets the view.
+          </p>
+        </div>` : ''}
+
+        <!-- Mandelbrot Parameters -->
+        <div id="mandelbrot-settings" class="mb-4 hidden">
+          <label class="label font-semibold">Mandelbrot Settings</label>
+
+          <label class="label text-sm">Max Iterations: <span id="mandelbrot-maxiter-readout">100</span></label>
+          <input id="mandelbrot-maxiter" type="range" min="50" max="2000" step="10" class="range" value="100" />
+
+          <label class="label text-sm mt-2">Color Offset: <span id="mandelbrot-color-readout" class="opacity-80">0.00</span></label>
+          <input id="mandelbrot-color" type="range" min="0" max="1" step="0.01" class="range" value="0" />
+
+          <button id="mandelbrot-reset" class="btn btn-sm mt-2">Reset fractal</button>
+        </div>
+
+        <!-- Julia Parameters -->
+        <div id="julia-settings" class="mb-4 hidden">
+          <label class="label font-semibold">Julia Parameters</label>
+
+          <label class="label text-sm">Real (Cr): <span id="julia-cr-readout" class="opacity-80">-0.800</span></label>
+          <input id="julia-cr" type="range" min="-1" max="1" step="0.001" class="range" />
+
+          <label class="label text-sm mt-2">Imaginary (Ci): <span id="julia-ci-readout" class="opacity-80">0.156</span></label>
+          <input id="julia-ci" type="range" min="-1" max="1" step="0.001" class="range" />
+
+          <button id="julia-reset" class="btn btn-sm mt-2">Reset fractal</button>
+        </div>
+
+        <!-- Burning Ship Parameters -->
+        <div id="burning-settings" class="mb-4 hidden">
+          <label class="label font-semibold">Burning Ship Settings</label>
+
+          <label class="label text-sm">Max Iterations: <span id="burning-maxiter-readout">100</span></label>
+          <input id="burning-maxiter" type="range" min="50" max="2000" step="10" class="range" value="100" />
+
+          <label class="label text-sm mt-2">Color Offset: <span id="burning-color-readout" class="opacity-80">0.00</span></label>
+          <input id="burning-color" type="range" min="0" max="1" step="0.01" class="range" value="0" />
+
+          <button id="burning-reset" class="btn btn-sm mt-2">Reset fractal</button>
+        </div>
+
+        <!-- Feedback -->
+        <div class="mb-3">
+          <label class="label cursor-pointer flex justify-between">
+            <span>Sound</span>
+            <input type="checkbox" id="settings-sound" class="toggle"
+              ${utils.isSoundEnabled() ? 'checked' : ''} />
+          </label>
+        </div>
+
+        <div class="mb-3">
+          <label class="label cursor-pointer flex justify-between">
+            <span>Show FPS</span>
+            <input type="checkbox" id="settings-show-fps" class="toggle" ${utils.isShowFps() ? 'checked' : ''} />
+          </label>
+        </div>
+
+        <div class="mb-3">
+          <label class="label cursor-pointer flex justify-between">
+            <span>Export Quality</span>
+            <select id="settings-export-quality" class="select select-bordered w-40">
+              <option value="hd" ${utils.getExportQuality() !== 'ultra' && utils.getExportQuality() !== 'ultra4' ? 'selected' : ''}>HD (DPR)</option>
+              <option value="ultra" ${utils.getExportQuality() === 'ultra' ? 'selected' : ''}>Ultra (2× DPR)</option>
+              <option value="ultra4" ${utils.getExportQuality() === 'ultra4' ? 'selected' : ''}>Ultra 4× (4×)</option>
+            </select>
+          </label>
+          <p class="text-xs opacity-70 mt-1">Choose export quality for PNG downloads.</p>
+        </div>
+
+        <div class="mb-3">
+          <label class="label cursor-pointer flex justify-between">
+            <span>Vibration</span>
+            <input type="checkbox" id="settings-vibration" class="toggle"
+              ${utils.isVibrationEnabled() ? 'checked' : ''} />
+          </label>
+        </div>
+
+        ${extraHtml}
       </div>
-
-      <div class="mb-3">
-        <label class="label cursor-pointer flex justify-between">
-          <span>Vibration</span>
-          <input type="checkbox" id="settings-vibration" class="toggle"
-            ${utils.isVibrationEnabled() ? 'checked' : ''} />
-        </label>
-      </div>
-
-      ${extraHtml}
-
-      <button id="close-settings" class="btn btn-sm btn-primary w-full">Close</button>
     </div>
   `;
 
@@ -662,7 +665,7 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
       localStorage.setItem('exportQuality', e.target.value);
     });
     // initialize control to stored value
-    const stored = localStorage.getItem('exportQuality') || 'hd';
+    const stored = utils.getExportQuality() || 'hd';
     settingsExportQuality.value = stored;
   }
 
@@ -817,7 +820,8 @@ function showToast(message, type = 'info', opts = {}) {
 // ------------------------------------------------------------
 window.ui = window.ui || {};
 // Shared API version for basic compatibility checks
-window.ui.SHARED_API_VERSION = '1.0';
+// BUMP to 2.0 — breaking change: header sound toggle removed; Settings panel contract updated
+window.ui.SHARED_API_VERSION = '2.0';
 Object.assign(window.ui, {
   createHeader,
   createZoomFooter,
@@ -837,19 +841,29 @@ Object.assign(window.ui, {
 });
 
 // Development-only testing hooks (exposed under window.__TEST__)
-window.__TEST__ = window.__TEST__ || {};
-window.__TEST__.getHeaderCount = () => document.querySelectorAll('.fixed.top-0').length;
-window.__TEST__.getFooterCount = () => document.querySelectorAll('.fixed.bottom-0').length;
-window.__TEST__.getCanvasComputedStyle = () => {
-  const c = document.getElementById('canvas');
-  if (!c) return null;
-  const cs = getComputedStyle(c);
-  return {
-    position: cs.position,
-    width: cs.width,
-    height: cs.height
+// These hooks should be disabled or no-ops in production builds. Build systems
+// can replace process.env.NODE_ENV to 'production' to enforce this.
+if (typeof process === 'undefined' || process.env.NODE_ENV !== 'production') {
+  window.__TEST__ = window.__TEST__ || {};
+  window.__TEST__.getHeaderCount = () => document.querySelectorAll('.fixed.top-0').length;
+  window.__TEST__.getFooterCount = () => document.querySelectorAll('.fixed.bottom-0').length;
+  window.__TEST__.getCanvasComputedStyle = () => {
+    const c = document.getElementById('canvas');
+    if (!c) return null;
+    const cs = getComputedStyle(c);
+    return {
+      position: cs.position,
+      width: cs.width,
+      height: cs.height
+    };
   };
-};
+} else {
+  // Production no-op hooks
+  window.__TEST__ = window.__TEST__ || {};
+  window.__TEST__.getHeaderCount = () => 0;
+  window.__TEST__.getFooterCount = () => 0;
+  window.__TEST__.getCanvasComputedStyle = () => null;
+}
 
 // Create custom settings modal (for per-toy options)
 function createSettingsModal(contentHtml) {

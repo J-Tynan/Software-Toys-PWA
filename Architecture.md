@@ -19,7 +19,7 @@ This document defines the file layout, separation of concerns, startup ordering,
 **Shared**
 
 * `shared/ui.js` Header, footer, settings, toasts; exports ESM API and provides `window.ui` fallback
-* `shared/utils.js` Theme, storage helpers, vibration/sound helpers, small math utilities
+* `shared/utils.js` Theme, storage helpers, **centralized `SETTINGS_KEYS` and settings helpers** (e.g., `isSoundEnabled`, `setSoundEnabled`), vibration/sound helpers, small math utilities
 * `shared/styles-extra.css` Global layout and z-index rules
 
 
@@ -97,6 +97,8 @@ html, body { height: 100%; margin: 0; }
 ** Canvas top and bottom are set from computed header/footer heights
 ** Worker created once
 ** Wheel handler attached to canvas
+** Settings: toggling sound from Settings works when header sound toggle is missing (`tests/smoke/header-sound.spec.js`).
+** Settings panel: sticky header and top-right close button `#close-settings` hides the panel when clicked (`tests/smoke/settings-close.spec.js`).
 * Run lint and smoke tests on PRs.
 
 Local smoke test runner:

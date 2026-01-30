@@ -44,7 +44,7 @@ export async function exportScreenshot({ quality, embedMeta = true, autoDownload
     const state = _getState();
     const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
 
-    const q = quality || localStorage.getItem('exportQuality') || 'hd';
+    const q = quality || utils.getExportQuality() || 'hd';
     let exportScale = 1;
     if (q === 'hd') exportScale = dpr;
     else if (q === 'ultra') exportScale = Math.min(4, dpr * 2);

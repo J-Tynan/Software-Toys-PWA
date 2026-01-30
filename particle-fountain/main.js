@@ -2,6 +2,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   loadGlobalTheme(); // From shared/utils.js
 
+  // Validate shared UI API version early to surface incompatibilities quickly.
+  function assertSharedApiVersion(expected = '2.0') {
+    const actual = window.ui && window.ui.SHARED_API_VERSION;
+    if (!actual) {
+      console.warn(`Shared UI API version not found; expected ${expected}.`);
+      return;
+    }
+    if (actual !== expected) {
+      const msg = `Shared UI API version mismatch: expected ${expected}, found ${actual}. This toy may be incompatible.`;
+      console.warn(msg);
+      if (window.ui && typeof window.ui.showToast === 'function') window.ui.showToast(msg, 'warning');
+    }
+  }
+  assertSharedApiVersion('2.0');
+
   const canvas = document.getElementById('canvas');
   let width = window.innerWidth;
   let height = window.innerHeight;
@@ -860,7 +875,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         ui.showToast('Preparing high-quality export...', 'info');
 
-        const q = localStorage.getItem('exportQuality') || 'hd';
+        const q = utils.getExportQuality() || 'hd';
         const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
         let exportScale = 1;
         if (q === 'hd') exportScale = dpr;

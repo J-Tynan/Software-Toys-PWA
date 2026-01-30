@@ -24,6 +24,21 @@ import { initExporter, exportScreenshot } from './exporter.js';
 document.addEventListener('DOMContentLoaded', () => {
   loadGlobalTheme();
 
+  // Validate shared UI API version early to surface incompatibilities quickly.
+  function assertSharedApiVersion(expected = '2.0') {
+    const actual = window.ui && window.ui.SHARED_API_VERSION;
+    if (!actual) {
+      console.warn(`Shared UI API version not found; expected ${expected}.`);
+      return;
+    }
+    if (actual !== expected) {
+      const msg = `Shared UI API version mismatch: expected ${expected}, found ${actual}. This toy may be incompatible.`;
+      console.warn(msg);
+      if (window.ui && typeof window.ui.showToast === 'function') window.ui.showToast(msg, 'warning');
+    }
+  }
+  assertSharedApiVersion('2.0');
+
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
 

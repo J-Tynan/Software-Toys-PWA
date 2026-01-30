@@ -134,7 +134,7 @@ The shared UI module (`shared/ui.js` or `ui-wiring.js`) must export the followin
   Creates and returns the fixed footer element. `opts` may include callbacks and extra controls.
 
 - `createSettingsPanel(opts)`  
-  Creates an off‑canvas settings panel. `opts` may include option lists, current selection, callbacks, and extra HTML.
+  Creates an off‑canvas settings panel. `opts` may include option lists, current selection, callbacks, and extra HTML. The panel **must** render a sticky header with a close button using id `close-settings`, and implementations must safely handle missing header controls (for example, the global header may lack a sound toggle).
 
 - `createInfoModal(html, title)`  
   Creates and returns an informational modal dialog.
@@ -155,6 +155,7 @@ The shared UI module (`shared/ui.js` or `ui-wiring.js`) must export the followin
 
 - Exactly one header element must exist with predictable class names.
 - Exactly one footer element must exist with predictable class names.
+- Settings panel must include a sticky header with a close button `#close-settings`; shared UI must guard DOM access for optional header controls (for example, `document.getElementById('settings-sound')` may return `null`).
 - Toasts must be usable during startup errors and must not block interaction.
 
 ---
@@ -226,11 +227,17 @@ Expose lightweight, development‑only hooks under `window.__TEST__`:
 
 These hooks must be disabled or no‑ops in production builds.
 
+Additional smoke-test expectations:
+- `tests/smoke/header-sound.spec.js` — verifies toggling sound from Settings works when header sound toggle is missing.
+- `tests/smoke/settings-close.spec.js` — verifies Settings panel has sticky header and `#close-settings` closes the panel.
+
 ### Versioning
 
 - Maintain a `SHARED_API_VERSION` constant in shared code.
 - Per‑toy code must check this version at startup and warn if incompatible.
 - Bump the version for breaking changes and document them in this file.
+
+Recent break: `SHARED_API_VERSION` bumped to `2.0` (breaking change): removed the header sound toggle and updated the Settings panel contract to require a sticky header with a `#close-settings` close button. Per‑toy code must use `shared/utils.js` settings helpers or guard access to optional header elements.
 
 ---
 
