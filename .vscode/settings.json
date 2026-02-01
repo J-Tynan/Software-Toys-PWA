@@ -1,3 +1,6 @@
 {
-    "livePreview.defaultPreviewPath": "/fractal-explorer/index.html"
+    "livePreview.defaultPreviewPath": "/fractal-explorer/index.html",
+    "chat.tools.terminal.autoApprove": {
+        "npx playwright": true
+    }
 }

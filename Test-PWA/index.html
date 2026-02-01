@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en" data-theme="emerald">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Test PWA - Software Toys</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="../shared/styles-extra.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-base-100 min-h-screen flex flex-col">
+  <!-- Header and Footer created by shared/ui + main.js -->
+
+  <!-- Blank canvas in the middle -->
+  <canvas id="canvas" role="application" aria-label="Test PWA canvas" style="position:absolute; left:0; right:0; top:0; bottom:0;"></canvas>
+
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/ui.js"></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
