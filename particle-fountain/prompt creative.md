@@ -1,13 +1,16 @@
-You are GPT-5.2-Codex running inside VS Code (Raptor Mini). I want you to generate a complete scaffolding for a new software toy called **Particle Fountain** that follows our shared architecture and UI contracts. Produce files and minimal starter code (no heavy rendering logic) so a developer can open the project and run the toy, wire the renderer later, and run smoke tests. Keep everything ESM, use the shared UI (`../shared/ui.js`) and utilities (`../shared/utils.js`), and follow the startup ordering and CONTRACTS in `CONTRACTS.md` and `Architecture.md`.
+I want you to generate a complete scaffolding for a new software toy called **Particle Fountain** that follows our shared architecture and UI contracts. Produce files and minimal starter code (no heavy rendering logic) so a developer can open the project and run the toy, wire the renderer later, and run smoke tests. Keep everything ESM, use the shared UI (`../shared/ui.js`) and utilities (`../shared/utils.js`), and follow the startup ordering and CONTRACTS in `CONTRACTS.md` and `Architecture.md`. Afterwards we can focus on each particle fountain individually for the heavy rendering logic.
 
 --- Requirements (high level)
 1. **Creative brief (what the toy shows):**
    - Perspective: *looking up at the night sky* from ground level.
-   - Three particle fountains at three different heights (low, mid, high). Each fountain uses a distinct particle style (e.g., sparkles, glows, streaks).
+   - Three particle fountains at three different heights (low 5ft to 15 ft, mid 100ft to 400ft, high beyond the stratosphere). Each fountain uses a distinct particle style (e.g., confetti, fireworks,  aurora). We need to rate limit the creation of particle fountains to preserve performance.
+   - Confetti: Confetti poppers as particle fountains. Explode at 5ft and the confetti particles can fly upwards between 5ft to 15ft. Simulating coloured paper particles. Clicking or tapping on the canvas explodes confetti poppers and they always explode upwards but with a slightly randomness to their angle.
+   - Fireworks: Fireworks are particle fountains. Fireworks shoot up from the ground with a fiery trail before exploding between 100ft and 400ft. Multiple firework types can be chosen from the Settings pane in a dropdown menu. Fireworks explodes with colour and particles fall with gravity, sometimes afefcted by wind. Clicking or tapping on the canvas send more fireworks shooting in to sky
+   - Aurora: Galactic aurora as particle fountains. Smooth gradients and magical looking colours inspired by galactic stellar phenomena and the aurora borealis. Clicking or tapping on the canvas creates spectacular nothern lights above the stratosphere. Not affected by gravity or the wind.
    - Particles rise upward from each fountain, affected by gravity and wind; they fade and fall back or dissipate.
    - Background: starry night gradient; optional parallax stars.
    - UI: header, settings panel, footer must use shared UI primitives and match Fractal Explorer visuals and behavior.
-   - Interactions: pan/zoom not required (canvas is fixed looking up). Interactions are controls: Play/Pause, Speed, Demo, Reset, Save, Load, Export (optional). Save/Load are toy-defined behaviors but UI visuals come from shared UI.
+   - Interactions: pan/zoom not required (canvas is fixed looking up). Interactions are controls: Play/Pause, Speed, Demo, Reset, Export. UI visuals come from shared UI. Settings pane contains dropdown menu to change particle fountain type. Each particle fountain type has 2 or 3 different options exposed in the Settings pane (sliders or toggles), these are only visible when that particle fountain type of selected.
 
 2. **Functional contracts to obey**
    - Call `ui.createHeader(title)` and `ui.createZoomFooter(opts)` on startup.
@@ -33,9 +36,8 @@ You are GPT-5.2-Codex running inside VS Code (Raptor Mini). I want you to genera
 4. **Behavioral details & UI wiring**
    - Header: Title "Particle Fountain"; left: Home, Demo; center: title; right: Reset, Save, Load, Fullscreen, Info, Theme toggle, Sound toggle, Settings.
    - Demo button: toy provides `startDemo()` and `stopDemo()` functions; `ui-wiring.js` should call toy-provided callbacks if present.
-   - Save/Load: `ui-wiring.js` renders Save and Load buttons visually; when clicked, call `window.toySave()` / `window.toyLoad(file)` if defined by the toy. Provide a simple file download helper in `ui-wiring.js` and a file input for load.
    - Settings panel: include toggles for Sound, Show FPS, Export Quality, and toy-specific controls: emitter heights (low/mid/high), particle count per emitter, gravity, wind strength, color palette selector. Use `extraHtml` parameter when calling `ui.createSettingsPanel(...)`.
-   - Footer: reuse `ui.createZoomFooter` but repurpose callbacks to control global speed (onZoomIn/out map to speed up/slow down). Provide a zoom readout element `#zoom-readout` or `#speed-readout` in footer; ensure `createZoomFooter` is used so tests find footer.
+   - Footer: Create footer UI that has time-based controls and staus message readouts. The 1st row contains the following controls: "0.25x", "0.5x", "0.75x", "1x", "Play"/"Pause". The 2nd row will contain status messages about the 1st row. Button sizes stay the same if the button label changes. Provide a speed readout element `#speed-readout` in 2nd row of the footer; ensure footer callbacks are used so tests find footer.
 
 5. **Developer TODOs & clear markers**
    - In `renderer.js` and `worker.js` add `// TODO: implement particle physics here` comments and minimal placeholder code so the toy runs without errors.

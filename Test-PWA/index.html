@@ -3,10 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Particle Fountain - Software Toys</title>
-  <!-- TODO: Add real icons and update manifest paths -->
-  <link rel="manifest" href="manifest.json">
+  <title>Test PWA - Software Toys</title>
 
+  <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.min.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="../shared/styles-extra.css">
@@ -15,15 +14,15 @@
 <body class="bg-base-100 min-h-screen">
   <div id="loading-overlay" class="fixed inset-0 bg-base-100 flex items-center justify-center z-50">
     <div class="text-center">
-      <p class="text-lg font-semibold">Loading Particle Fountain…</p>
+      <p class="text-lg font-semibold">Loading Test PWA…</p>
       <p class="text-sm opacity-70">Preparing renderer</p>
     </div>
   </div>
 
   <p id="canvas-desc" class="sr-only">
-    Interactive particle fountain canvas. Use the footer controls to adjust speed and playback.
+    Test canvas for verifying header, footer, and layout.
   </p>
-  <canvas id="canvas" role="application" aria-label="Particle Fountain canvas" aria-describedby="canvas-desc"></canvas>
+  <canvas id="canvas" role="application" aria-label="Test PWA canvas" aria-describedby="canvas-desc"></canvas>
 
   <noscript>
     <p class="p-4">This demo requires JavaScript to run. Please enable JavaScript in your browser.</p>

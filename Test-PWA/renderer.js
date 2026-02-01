@@ -10,7 +10,6 @@ export async function init({ ctx, uiTick: tick, settleMs: settle = 120 } = {}) {
   uiTick = tick;
   settleMs = settle;
   worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-  // TODO: implement particle physics here and pass real parameters to the worker.
   worker.addEventListener('message', (e) => {
     const { type, payload } = e.data || {};
     if (type === 'result') {

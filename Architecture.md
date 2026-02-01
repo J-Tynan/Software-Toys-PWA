@@ -43,7 +43,7 @@ This document defines the file layout, separation of concerns, startup ordering,
 
 Every `main.js` must follow this exact sequence on startup:
 
-1. Call `ui.createHeader(title)` and `ui.createZoomFooter(opts)` to create header and footer.
+1. Call `ui.createHeader(title)` and `ui.createFooter(opts)` to create header and footer.
 2. Call `updateCanvasLayout()` to compute header/footer heights and set canvas `top` and `bottom`.
 3. Initialize renderer with `renderer.init({ ctx, uiTick, settleMs })`.
 4. Call `requestRender({ preview: false })` for the first full render.

@@ -387,23 +387,141 @@ function createZoomFooter({ onZoomIn, onZoomOut }) {
 // Simple, generic control panel for toys that need a footer area with
 // arbitrary controls. Toys call `ui.createControlPanel(html)` and the UI
 // layer handles rendering and updates.
+function ensureControlPanelRowsCentered(panel) {
+  const content = panel.querySelector('.control-content') || panel;
+  if (!content) return;
+  const rows = Array.from(content.children);
+  const rowCount = rows.length;
+  rows.forEach((row, index) => {
+    // Remove row-level padding/gap/border to enforce a consistent footer height
+    Array.from(row.classList).forEach(cls => {
+      if (/^p[trblxy]?-[0-9]+$/.test(cls)) row.classList.remove(cls);
+      if (/^gap-[0-9]+$/.test(cls)) row.classList.remove(cls);
+      if (cls === 'border' || cls.startsWith('border-')) row.classList.remove(cls);
+    });
+
+    row.classList.add('flex', 'justify-center', 'items-center', 'w-full', 'gap-2', 'flex-wrap');
+    if (rowCount <= 1) {
+      row.classList.add('py-2');
+    } else if (rowCount === 2) {
+      row.classList.add(index === 0 ? 'py-2' : 'py-1');
+    } else {
+      row.classList.add(index === 0 || index === rowCount - 1 ? 'py-2' : 'py-1');
+    }
+
+    // Standardize footer button size to match Fractal Explorer
+    row.querySelectorAll('button, .btn, [role="button"]').forEach(btn => {
+      btn.classList.add('touch-target');
+      if (btn.classList.contains('btn')) {
+        ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'].forEach(size => btn.classList.remove(size));
+        btn.classList.add('btn-xs');
+      }
+    });
+  });
+}
+
+function updateControlPanelHeightCSS(panel) {
+  if (!panel) return;
+  const rect = panel.getBoundingClientRect();
+  document.body.style.setProperty('--footer-height', Math.round(rect.height) + 'px');
+}
+
+function createFooter(opts = {}) {
+  const html = typeof opts === 'string' ? opts : (opts.html || opts.content || '');
+  return createControlPanel(html);
+}
+
 function createControlPanel(html) {
   let panel = document.getElementById('control-panel');
   if (panel) {
     const content = panel.querySelector('.control-content');
     if (content) content.innerHTML = html;
+    ensureControlPanelRowsCentered(panel);
+    updateControlPanelHeightCSS(panel);
     return panel;
   }
 
   panel = document.createElement('div');
   panel.id = 'control-panel';
-  panel.className = 'fixed bottom-0 left-0 right-0 z-20 bg-base-200 border-t border-base-300 p-4';
+  panel.className = 'fixed bottom-0 left-0 right-0 z-20 bg-base-200 border-t border-base-300';
   panel.innerHTML = `
     <div class="max-w-4xl mx-auto control-content">${html}</div>
   `;
 
   document.body.appendChild(panel);
+  ensureControlPanelRowsCentered(panel);
+  updateControlPanelHeightCSS(panel);
+  if (!panel.dataset.resizeBound) {
+    window.addEventListener('resize', () => updateControlPanelHeightCSS(panel));
+    panel.dataset.resizeBound = 'true';
+  }
   return panel;
+}
+
+// ------------------------------------------------------------
+// Canvas Layout Helpers (shared)
+// ------------------------------------------------------------
+// Computes and applies canvas sizing to fit between header and footer.
+// Returns the computed dimensions so toys can adjust their renderers.
+function updateCanvasLayout(canvas) {
+  if (!canvas) return null;
+  const headerEl = document.querySelector('.fixed.top-0');
+  const footerEl = document.querySelector('.fixed.bottom-0');
+  const headerHeight = headerEl ? Math.round(headerEl.getBoundingClientRect().height) : 0;
+  const footerHeight = footerEl ? Math.round(footerEl.getBoundingClientRect().height) : 0;
+
+  document.body.style.setProperty('--header-height', headerHeight + 'px');
+  document.body.style.setProperty('--footer-height', footerHeight + 'px');
+
+  canvas.style.top = headerHeight + 'px';
+  canvas.style.left = '0';
+  canvas.style.width = '100%';
+  const visibleHeight = Math.max(1, window.innerHeight - headerHeight - footerHeight);
+  canvas.style.height = visibleHeight + 'px';
+  canvas.style.bottom = '';
+
+  canvas.width = Math.max(1, canvas.clientWidth);
+  canvas.height = Math.max(1, canvas.clientHeight);
+
+  return {
+    headerHeight,
+    footerHeight,
+    width: canvas.width,
+    height: canvas.height
+  };
+}
+
+// Binds automatic layout updates; optional onResize callback for re-rendering.
+// Returns a cleanup function to detach listeners/observers.
+function bindCanvasLayout(canvas, { onResize } = {}) {
+  let last = updateCanvasLayout(canvas);
+  if (typeof onResize === 'function') onResize(last);
+
+  const handle = () => {
+    last = updateCanvasLayout(canvas);
+    if (typeof onResize === 'function') onResize(last);
+  };
+
+  window.addEventListener('resize', handle);
+  window.addEventListener('load', handle);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(handle);
+  }
+
+  const headerEl = document.querySelector('.fixed.top-0');
+  const footerEl = document.querySelector('.fixed.bottom-0');
+  let observer = null;
+  if ('ResizeObserver' in window) {
+    observer = new ResizeObserver(handle);
+    if (headerEl) observer.observe(headerEl);
+    if (footerEl) observer.observe(footerEl);
+  }
+
+  return () => {
+    window.removeEventListener('resize', handle);
+    window.removeEventListener('load', handle);
+    if (observer) observer.disconnect();
+  };
 }
 
 // ------------------------------------------------------------
@@ -833,7 +951,10 @@ Object.assign(window.ui, {
   getInfoModal: () => document.getElementById('info-modal'),
   showInfo: () => { const m = document.getElementById('info-modal'); if (m) m.showModal(); },
 
+  createFooter,
   createControlPanel,
+  updateCanvasLayout,
+  bindCanvasLayout,
   createPlaybackControls,
   bindPlaybackControls,
 

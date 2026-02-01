@@ -1,18 +1,25 @@
-// Minimal service worker stub — TODO: refine cache strategies for production
-const CACHE_NAME = 'particle-fountain-cache-v1';
-const urlsToCache = ['/', '/index.html', '/styles.css', '/main.js'];
+const CACHE_NAME = 'particle-fountain-v1';
+const urlsToCache = [
+  './index.html',
+  './styles.css',
+  './main.js',
+  './renderer.js',
+  './worker.js',
+  './ui-wiring.js',
+  './visualizations.js',
+  './manifest.json',
+  '../shared/ui.js',
+  '../shared/utils.js',
+  '../shared/styles-extra.css'
+];
 
-self.addEventListener('install', (ev) => {
-  ev.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache)));
+// TODO: Disable or bypass caching in dev mode if needed.
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
 });
 
-self.addEventListener('activate', (ev) => {
-  ev.waitUntil(self.clients.claim());
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then(resp => resp || fetch(event.request))
+  );
 });
-
-self.addEventListener('fetch', (ev) => {
-  // Network-first with cache fallback
-  ev.respondWith(fetch(ev.request).catch(() => caches.match(ev.request)));
-});
-
-// DEV note: disable SW during development to avoid stale files.

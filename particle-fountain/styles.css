@@ -1,6 +1,24 @@
-/* Particle Fountain toy-specific styles */
-#canvas { position: absolute; left: 0; right: 0; top: var(--header-height, 0); bottom: var(--footer-height, 0); background: radial-gradient(ellipse at center, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.05) 100%); }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 20%, rgba(70, 90, 160, 0.3), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(90, 120, 200, 0.25), transparent 40%),
+    linear-gradient(180deg, #070b1d 0%, #0b1230 45%, #0d1538 100%);
+  background-attachment: fixed;
+}
 
-/* Small helper for focus outlines and accessible large-touch targets */
-.btn { outline-offset: 2px; }
-.pf-controls { padding: 0.5rem; }
+#canvas {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: block;
+}
+
+/* Keep Play/Pause button width stable to prevent shifting */
+#pf-play-toggle {
+  min-width: 4.5rem;
+}
+
+/* TODO: add optional parallax stars */

@@ -2,7 +2,8 @@ Create a **scaffolded PWA skeleton** for a new software toy called **Particle Fo
 
 **Goal:** produce a ready-to-edit scaffold under `software-toys-pwa/particle-fountain/`that:
 - Uses the shared UI and utils (`../shared/ui.js`, `../shared/utils.js`, `../shared/styles-extra.css`).
-- Matches the Fractal Explorer header, settings panel and footer visuals/behavior.
+- Matches the Fractal Explorer header, settings panel and footer visuals.
+- The footer UI for this software toy will be 2 rows tall. The 1st row contains the following controls: "0.25x", "0.5x", "0.75x", "1x", "Play"/"Pause". The 2nd row will contain status messages about the 1st row.
 - Implements the required startup sequence and exposes test hooks per CONTRACTS.md.
 - Provides a demo-mode callback placeholder and a simple "paused / speed" playback control wiring example.
 - Is accessible and PWA-ready (manifest + service worker stub).
@@ -19,30 +20,26 @@ Create a **scaffolded PWA skeleton** for a new software toy called **Particle Fo
 2. `main.js` (ESM)
    - Implements the **startup checklist** from Architecture.md / CONTRACTS.md in order:
      1. `ui.createHeader('Particle Fountain')`
-     2. `ui.createZoomFooter({ onZoomIn, onZoomOut })` OR `ui.createFooter(opts)` if generic footer is used
+     2. `ui.createFooter(opts)` if generic footer is used
      3. `updateCanvasLayout()` to compute header/footer heights and set CSS vars
      4. `renderer.init({ ctx, uiTick, settleMs })`
      5. `renderer.requestRender({ preview: false })`
      6. Hide loading overlay and enable UI
    - Wire header buttons:
      - `Demo` button → call `onDemo()` placeholder exported from `ui-wiring.js` or provided by toy.
-     - `Save` button → call `onSave()` placeholder (toy supplies serialization).
-     - `Load` button → call `onLoad()` placeholder (toy supplies deserialization).
      - `Reset`, `Fullscreen`, `Info`, `Theme`, `Sound` wired to shared UI where appropriate.
    - Create canvas sizing logic that reads header/footer heights and sets `--header-height` and `--footer-height` CSS vars.
    - Attach pointer/wheel handlers to canvas only (passive: false for wheel).
-   - Implement basic pointer pan/zoom preview skeleton and call `renderer.requestRender({ preview: true })` during interaction and `renderer.scheduleFullResRender()` on settle.
    - Initialize exporter stub (if desired) and add an `Export` header button placeholder.
    - Expose `window.__TEST__` hooks: `getHeaderCount()`, `getFooterCount()`, `isRendererInitialized()`, `getCanvasComputedStyle()`.
    - Add dev-only self-test that verifies the startup checklist and shows toasts/modal on failure (non-blocking).
 
 3. `ui-wiring.js`
    - Thin adapter that wires toy-specific callbacks into the shared UI:
-     - Exports `attachToyUi({ onDemo, onSave, onLoad, onReset, onInfo })`.
-     - When called, it inserts Save/Load buttons into the header (same visual style as Fractal Explorer) and wires them to the provided callbacks.
+     - Exports `attachToyUi({ onDemo, onReset, onInfo })`.
+     - When called, and wires them to the provided callbacks.
      - Ensures graceful behavior if shared header controls are missing (guard DOM access).
      - Exposes `createToySettingsPanel(opts)` that calls `ui.createSettingsPanel(...)` with `extraHtml` for toy-specific controls.
-     - Document the contract: `onSave()` should return a `{ filename, blobOrString }` or a JSON object; `onLoad(file)` receives a File or parsed object.
 
 4. `renderer.js`
    - Export the renderer public API per CONTRACTS.md:
@@ -77,7 +74,7 @@ Create a **scaffolded PWA skeleton** for a new software toy called **Particle Fo
    - Include a TODO comment about dev-mode disabling.
 
 10. `README.md` (toy folder)
-    - Short instructions: how to run locally (`npm run serve`), where to implement particle logic, how to wire Save/Load and Demo callbacks, and how to run smoke tests.
+    - Short instructions: how to run locally (`npm run serve`), where to implement particle logic, Demo callbacks, and how to run smoke tests.
 
 11. `tests/selftest.js` (dev-only)
     - Lightweight script that runs in-browser to assert the startup checklist and exposes results in console and via `ui.showToast()`.
@@ -89,7 +86,6 @@ Create a **scaffolded PWA skeleton** for a new software toy called **Particle Fo
 - Keep all shared UI DOM queries guarded (e.g., `document.getElementById('sound-toggle')` may be null).
 - Add `SHARED_API_VERSION = '2.0'` check in `main.js` and warn if mismatch.
 - Add clear `// TODO` markers where toy-specific particle logic must be implemented (e.g., particle update loop, spawn heights, seed handling).
-- Provide Save/Load example: `onSave()` returns `JSON.stringify({ seed, settings })` and triggers a download; `onLoad(file)` reads JSON and applies settings — but only include the placeholder wiring and comments, not a full implementation.
 - Ensure accessibility: header buttons include `aria-label`, canvas has `role="application"` and `aria-describedby` linking to a short description element.
 - Expose `window.__TEST__` hooks and ensure they are no-ops in production (wrap in `if (location.hostname === 'localhost' || location.protocol === 'http:')` or a `DEV` flag).
 - Keep code well-commented and modular so maintainers can replace placeholder worker logic with a real particle renderer later.
@@ -97,7 +93,7 @@ Create a **scaffolded PWA skeleton** for a new software toy called **Particle Fo
 **Deliverable format (single response):**
 - Output a compact file tree listing the files to be created.
 - For each file, include a short code stub (2–40 lines) showing the exact top-level structure, imports, exported functions, and TODO comments.
-- Use clear inline comments describing where to implement particle logic, save/load serialization, demo sequences, and worker rendering.
+- Use clear inline comments describing where to implement particle logic, demo sequences, and worker rendering.
 - Do not implement full particle physics — only scaffolding and contracts compliance.
 
 **Example file tree to create:**

@@ -1,4 +1,23 @@
-# Particle Fountain (scaffold)
+# Particle Fountain
+
+Minimal scaffold for a shared-UI software toy.
+
+## Run locally
+```sh
+npm run serve
+```
+
+Open: http://localhost:8000/particle-fountain/index.html
+
+## Where to implement
+- Particle logic: renderer.js + worker.js (TODO markers)
+- UI wiring: ui-wiring.js
+- Visual helpers: visualizations.js
+
+## Smoke tests
+```sh
+npm run test:smoke
+```# Particle Fountain (scaffold)
 
 This folder contains a scaffolded Particle Fountain toy that follows the project's shared architecture and contracts.
 

@@ -1,4 +1,19 @@
-// Minimal helpers for particle drawing and transforms
+export function toCanvasSpace(x, y, width, height) {
+  return { x: x * width, y: y * height };
+}
+
+export function toWorldSpace(x, y, width, height) {
+  return { x: x / width, y: y / height };
+}
+
+export function drawParticles(ctx, particles) {
+  // TODO: implement particle drawing
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  particles.forEach(p => {
+    ctx.fillStyle = p.color || 'white';
+    ctx.fillRect(p.x, p.y, 2, 2);
+  });
+}// Minimal helpers for particle drawing and transforms
 export function drawParticles(ctx, particles = []) {
   if (!ctx) return;
   ctx.save();

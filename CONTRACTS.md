@@ -157,6 +157,21 @@ The shared UI module (`shared/ui.js` or `ui-wiring.js`) must export the followin
 - Exactly one footer element must exist with predictable class names.
 - Settings panel must include a sticky header with a close button `#close-settings`; shared UI must guard DOM access for optional header controls (for example, `document.getElementById('settings-sound')` may return `null`).
 - Toasts must be usable during startup errors and must not block interaction.
+- Canvas layout must be sized between header and footer and re-measured on resize to avoid gaps.
+
+### Footer UI height standards
+
+All shared footers must use the shared control panel row standardizer in shared/ui.js.
+
+- **Wrapper**: no extra padding on the footer container (use border only).
+- **Row alignment**: each row is centered horizontally and vertically.
+- **Button sizing**: buttons use `btn-xs` and `touch-target` for consistent height.
+
+**Row padding by count**
+
+- **1 row**: `py-2`
+- **2 rows**: row 1 `py-2`, row 2 `py-1`
+- **3 rows**: row 1 `py-2`, row 2 `py-1`, row 3 `py-2`
 
 ---
 
@@ -182,10 +197,20 @@ In development builds, `main.js` must run a self‑test that verifies the enviro
 ### Required startup sequence
 
 1. `createHeader(title)` and `createFooter(opts)`
-2. `updateCanvasLayout()` to compute header and footer heights and set CSS variables
+2. `updateCanvasLayout()` or `bindCanvasLayout()` to compute header/footer heights and set CSS variables
 3. `renderer.init({ ctx, uiTick, settleMs })`
 4. `requestRender({ preview: false })`
 5. Hide loading overlay and enable UI
+
+### Shared canvas layout helpers
+
+Use the shared helpers in `shared/ui.js` when sizing the canvas between the header and footer.
+
+- `updateCanvasLayout(canvas)`
+  - Computes header/footer heights, sets `--header-height` and `--footer-height`, and sizes the canvas.
+- `bindCanvasLayout(canvas, { onResize })`
+  - Calls `updateCanvasLayout()` immediately and when layout changes (window resize, fonts, header/footer resize).
+  - Use `onResize` to trigger a re-render to avoid stale rows or black gaps after resize.
 
 ---
 
