@@ -16,7 +16,12 @@ body {
 }
 
 .control-panel {
-  @apply bg-base-200 p-4 rounded-t-lg shadow-lg;
+  @apply bg-base-200 rounded-t-lg shadow-lg;
+}
+
+/* Larger touch targets for mobile (shared across toys) */
+@media (max-width: 640px) {
+  .touch-target { min-width: 44px; min-height: 44px; padding-left: .5rem; padding-right: .5rem; }
 }
 
 /* Loading overlay fade-out transition */

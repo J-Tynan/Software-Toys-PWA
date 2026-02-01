@@ -1,0 +1,7 @@
+/* Minimal layout rules to satisfy Architecture.md */
+div.fixed.top-0 { position: fixed; top: 0; left: 0; right: 0; z-index: 20; }
+div.fixed.bottom-0 { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; }
+#canvas { position: absolute; left: 0; right: 0; top: var(--header-height, 0); bottom: var(--footer-height, 0); z-index: 0; touch-action: none; }
+html, body { height: 100%; margin: 0; }
+#test-footer > div { display: block; }
+#footer-controls { display: flex; align-items: center; }

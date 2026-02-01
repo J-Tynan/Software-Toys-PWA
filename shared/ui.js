@@ -17,13 +17,13 @@ function createHeader(title) {
   const header = document.createElement('div');
   header.id = 'fe-header';
   header.className =
-    'fixed top-0 left-0 right-0 z-20 bg-base-100 shadow-md h-12';
+    'fixed top-0 left-0 right-0 z-20 bg-base-100 shadow-md h-12 min-h-12 max-h-12';
 
   header.innerHTML = `
     <div class="grid grid-cols-[auto_1fr_auto] items-center h-full px-2">
 
       <!-- LEFT -->
-      <div class="flex items-center gap-2 flex-wrap max-w-[40vw]">
+      <div class="flex items-center gap-2 flex-nowrap max-w-[40vw] overflow-hidden">
         <button id="home-btn" class="btn btn-xs btn-ghost tooltip" data-tip="Home">
           Home
         </button>
@@ -40,7 +40,7 @@ function createHeader(title) {
       </div>
 
       <!-- RIGHT -->
-      <div class="flex items-center gap-1 flex-shrink-0">
+      <div class="flex items-center gap-1 flex-nowrap flex-shrink-0">
         <button id="reset-btn" class="btn btn-xs btn-secondary tooltip" data-tip="Reset">
           Reset
         </button>
@@ -177,6 +177,18 @@ function createHeader(title) {
     if (!modal) modal = createInfoModal(); // create with sensible default
     if (!document.body.contains(modal)) document.body.appendChild(modal);
     modal.showModal();
+  });
+
+  // Header settings button: ensure it opens the shared settings panel lazily
+  const settingsBtn = document.getElementById('settings-btn');
+  if (settingsBtn) settingsBtn.addEventListener('click', () => {
+    if (window.ui && typeof window.ui.openSettingsPanel === 'function') {
+      window.ui.openSettingsPanel();
+    } else {
+      let panel = document.getElementById('settings-panel') || createSettingsPanel();
+      if (panel && !document.body.contains(panel)) document.body.appendChild(panel);
+      panel.classList.remove('hidden');
+    }
   });
 
   // Provide helpers so toys can set their own About content without touching UI logic
@@ -338,24 +350,24 @@ function createZoomFooter({ onZoomIn, onZoomOut }) {
 
   footer.innerHTML = `
     <!-- Row 1: zoom controls -->
-    <div class="flex justify-center items-center gap-2 py-2 flex-wrap">
-      <button class="btn btn-xs touch-target" data-steps="-50">−50</button>
-      <button class="btn btn-xs touch-target" data-steps="-25">−25</button>
-      <button class="btn btn-xs touch-target" data-steps="-10">−10</button>
-      <button class="btn btn-xs touch-target" data-steps="-5">−5</button>
-      <button class="btn btn-xs touch-target" data-steps="-1">−1</button>
+    <div>
+      <button class="btn" data-steps="-50">−50</button>
+      <button class="btn" data-steps="-25">−25</button>
+      <button class="btn" data-steps="-10">−10</button>
+      <button class="btn" data-steps="-5">−5</button>
+      <button class="btn" data-steps="-1">−1</button>
 
       <span class="mx-2 text-xs opacity-70">ZOOM</span>
 
-      <button class="btn btn-xs" data-steps="1">+1</button>
-      <button class="btn btn-xs" data-steps="5">+5</button>
-      <button class="btn btn-xs" data-steps="10">+10</button>
-      <button class="btn btn-xs" data-steps="25">+25</button>
-      <button class="btn btn-xs" data-steps="50">+50</button>
+      <button class="btn" data-steps="1">+1</button>
+      <button class="btn" data-steps="5">+5</button>
+      <button class="btn" data-steps="10">+10</button>
+      <button class="btn" data-steps="25">+25</button>
+      <button class="btn" data-steps="50">+50</button>
     </div>
 
     <!-- Row 2: zoom readout -->
-    <div class="flex justify-center items-center py-1">
+    <div>
       <span id="zoom-readout" class="text-sm opacity-80">Zoom: 1.00×</span>
     </div>
   `;
@@ -367,6 +379,8 @@ function createZoomFooter({ onZoomIn, onZoomOut }) {
       else onZoomOut(Math.abs(steps));
     });
   });
+
+  ensureFooterRowsStandard(footer);
 
   document.body.appendChild(footer);
 
@@ -387,22 +401,53 @@ function createZoomFooter({ onZoomIn, onZoomOut }) {
 // Simple, generic control panel for toys that need a footer area with
 // arbitrary controls. Toys call `ui.createControlPanel(html)` and the UI
 // layer handles rendering and updates.
+function ensureFooterRowsStandard(container) {
+  const content = container.querySelector('.control-content') || container;
+  if (!content) return;
+  const rows = Array.from(content.children);
+  rows.forEach((row, index) => {
+    // Remove any row-level padding/border/gap to enforce a consistent standard
+    Array.from(row.classList).forEach(cls => {
+      if (/^p[trblxy]?-[0-9]+$/.test(cls)) row.classList.remove(cls);
+      if (/^gap-[0-9]+$/.test(cls)) row.classList.remove(cls);
+      if (cls === 'border' || cls.startsWith('border-')) row.classList.remove(cls);
+      if (cls === 'flex-nowrap') row.classList.remove(cls);
+    });
+
+    row.classList.add('flex', 'justify-center', 'items-center', 'w-full', 'gap-2', 'flex-wrap');
+    row.classList.add(index === 0 ? 'py-2' : 'py-1');
+
+    // Standardize touch targets and button sizing
+    row.querySelectorAll('button, .btn, [role="button"]').forEach(btn => {
+      btn.classList.add('touch-target');
+      if (btn.classList.contains('btn')) {
+        ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg'].forEach(size => btn.classList.remove(size));
+        btn.classList.add('btn-xs');
+      }
+    });
+  });
+}
+
 function createControlPanel(html) {
   let panel = document.getElementById('control-panel');
   if (panel) {
     const content = panel.querySelector('.control-content');
     if (content) content.innerHTML = html;
+    // Ensure rows are standardized whenever content updates
+    ensureFooterRowsStandard(panel);
     return panel;
   }
 
   panel = document.createElement('div');
   panel.id = 'control-panel';
-  panel.className = 'fixed bottom-0 left-0 right-0 z-20 bg-base-200 border-t border-base-300 p-4';
+  panel.className = 'fixed bottom-0 left-0 right-0 z-20 bg-base-200 border-t border-base-300';
   panel.innerHTML = `
     <div class="max-w-4xl mx-auto control-content">${html}</div>
   `;
 
   document.body.appendChild(panel);
+  // Ensure rows are center-aligned on initial creation
+  ensureFooterRowsStandard(panel);
   return panel;
 }
 
@@ -493,11 +538,12 @@ function bindPlaybackControls({ onPauseChange, onSpeedChange } = {}) {
 // ------------------------------------------------------------
 // Settings Panel (Opt-in)
 // ------------------------------------------------------------
-function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, extraTopHtml = '', extraHtml = '', showFractalSelection = true }) {
-  const panel = document.createElement('div');
-  panel.className = 'fixed inset-0 z-30 hidden';
+function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, extraTopHtml = '', extraHtml = '', showFractalSelection = false } = {}) {
+  // If a panel already exists, we update its content and re-bind controls
+  let panel = document.getElementById('settings-panel');
 
-  panel.innerHTML = `
+  // Build the inner HTML based on the incoming options
+  const inner = `
     <div class="absolute inset-0 bg-black/40"></div>
 
     <div class="absolute right-0 top-0 h-full w-80 bg-base-200 p-0 shadow-lg flex flex-col">
@@ -602,8 +648,19 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
     </div>
   `;
 
-  document.body.appendChild(panel);
+  // If the panel existed previously, replace its content and rebind
+  if (panel) {
+    panel.className = 'fixed inset-0 z-30 hidden';
+    panel.innerHTML = inner;
+  } else {
+    panel = document.createElement('div');
+    panel.id = 'settings-panel';
+    panel.className = 'fixed inset-0 z-30 hidden';
+    panel.innerHTML = inner;
+    document.body.appendChild(panel);
+  }
 
+  // Convenience selectors
   const fractalSelect = panel.querySelector('#fractal-select');
   const mandelbrotSection = panel.querySelector('#mandelbrot-settings');
   const juliaSection = panel.querySelector('#julia-settings');
@@ -617,7 +674,7 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
 
   updateSettingsVisibility(currentFractal);
 
-  // Only bind fractal selection change if the select exists (some toys hide it)
+  // Bind controls (safe to call on re-create since innerHTML was reset)
   if (fractalSelect) {
     fractalSelect.addEventListener('change', e => {
       const type = e.target.value;
@@ -629,7 +686,6 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
   const settingsSound = panel.querySelector('#settings-sound');
   if (settingsSound) settingsSound.addEventListener('change', e => {
     utils.toggleSound(e.target.checked);
-
     const headerSoundToggle = document.getElementById('sound-toggle');
     if (headerSoundToggle) headerSoundToggle.checked = e.target.checked;
   });
@@ -639,11 +695,9 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
     localStorage.setItem('vibrationEnabled', e.target.checked);
   });
 
-  // Show FPS toggle (shared) → persists in localStorage and updates overlay across toys
   const settingsShowFps = panel.querySelector('#settings-show-fps');
   function handleShowFpsChange(checked) {
     localStorage.setItem('showFps', checked);
-
     // Try to set immediately; if ui.setFpsEnabled is not yet available, retry a few times
     let attempts = 0;
     function trySet() {
@@ -658,28 +712,33 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
   }
   settingsShowFps && settingsShowFps.addEventListener('change', (e) => handleShowFpsChange(e.target.checked));
 
-  // Export quality control (hd | ultra)
   const settingsExportQuality = panel.querySelector('#settings-export-quality');
   if (settingsExportQuality) {
     settingsExportQuality.addEventListener('change', (e) => {
       localStorage.setItem('exportQuality', e.target.value);
     });
-    // initialize control to stored value
     const stored = utils.getExportQuality() || 'hd';
     settingsExportQuality.value = stored;
   }
 
-  // If another window changes the setting, sync the panel control
-  window.addEventListener('storage', (ev) => {
-    if (ev.key === 'showFps') {
-      const val = ev.newValue === 'true';
-      if (settingsShowFps) settingsShowFps.checked = val;
-      if (window.ui && typeof window.ui.setFpsEnabled === 'function') window.ui.setFpsEnabled(val);
-    }
-    if (ev.key === 'exportQuality') {
-      if (settingsExportQuality) settingsExportQuality.value = ev.newValue || 'hd';
-    }
-  });
+  // A single shared storage handler for the settings panel (added once)
+  if (!window.__settingsPanelStorageHandlerAdded) {
+    window.addEventListener('storage', (ev) => {
+      const p = document.getElementById('settings-panel');
+      if (!p) return;
+      if (ev.key === 'showFps') {
+        const val = ev.newValue === 'true';
+        const s = p.querySelector('#settings-show-fps');
+        if (s) s.checked = val;
+        if (window.ui && typeof window.ui.setFpsEnabled === 'function') window.ui.setFpsEnabled(val);
+      }
+      if (ev.key === 'exportQuality') {
+        const s = p.querySelector('#settings-export-quality');
+        if (s) s.value = ev.newValue || 'hd';
+      }
+    });
+    window.__settingsPanelStorageHandlerAdded = true;
+  }
 
   function closePanel() {
     panel.classList.add('hidden');
@@ -691,28 +750,43 @@ function createSettingsPanel({ fractals = [], currentFractal, onFractalChange, e
   panel.querySelector(':scope > div.absolute.inset-0')
     ?.addEventListener('click', closePanel);
 
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !panel.classList.contains('hidden')) {
-      closePanel();
-    }
-  });
-
-  document.getElementById('settings-btn')
-    ?.addEventListener('click', () => {
-      panel.classList.remove('hidden');
-
-      const headerSoundToggle = document.getElementById('sound-toggle');
-      const settingsSoundToggle = panel.querySelector('#settings-sound');
-      if (headerSoundToggle && settingsSoundToggle) {
-        settingsSoundToggle.checked = headerSoundToggle.checked;
+  // Escape behavior - single handler added once
+  if (!window.__settingsPanelKeyHandlerAdded) {
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        const p = document.getElementById('settings-panel');
+        if (p && !p.classList.contains('hidden')) p.classList.add('hidden');
       }
-
-      panel.querySelector('#settings-vibration').checked =
-        utils.isVibrationEnabled();
     });
+    window.__settingsPanelKeyHandlerAdded = true;
+  }
+
+  // Ensure controls reflect current state
+  const headerSoundToggle = document.getElementById('sound-toggle');
+  const settingsSoundToggle = panel.querySelector('#settings-sound');
+  if (headerSoundToggle && settingsSoundToggle) settingsSoundToggle.checked = headerSoundToggle.checked;
+  const sv = panel.querySelector('#settings-vibration'); if (sv) sv.checked = utils.isVibrationEnabled();
 
   return panel;
 }
+
+// Expose helpers
+window.ui = window.ui || {};
+window.ui.createSettingsPanel = createSettingsPanel;
+window.ui.openSettingsPanel = function(opts = {}) {
+  const p = createSettingsPanel(opts);
+  if (p && !document.body.contains(p)) document.body.appendChild(p);
+
+  // Sync a few header-driven controls if present
+  const headerSoundToggle = document.getElementById('sound-toggle');
+  const settingsSoundToggle = p.querySelector('#settings-sound');
+  if (headerSoundToggle && settingsSoundToggle) settingsSoundToggle.checked = headerSoundToggle.checked;
+
+  const sv = p.querySelector('#settings-vibration'); if (sv) sv.checked = utils.isVibrationEnabled();
+
+  p.classList.remove('hidden');
+  return p;
+};
 
 // ------------------------------------------------------------
 // Info Modal
