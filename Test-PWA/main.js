@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     <div id="footer-controls">
       <button id="btn-test-1" class="btn">Test 1</button>
       <button id="btn-test-2" class="btn">Test 2</button>
+      <button id="btn-save" class="btn">Save</button>
+      <button id="btn-load" class="btn">Load</button>
       <button id="btn-info" class="btn">Info</button>
       <button id="btn-settings" class="btn">Settings</button>
     </div>
@@ -116,6 +118,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-test-2').addEventListener('click', () => {
     document.getElementById('test-status').textContent = 'Button 2 clicked';
     if (window.ui && typeof window.ui.showToast === 'function') window.ui.showToast('Test 2 clicked', 'info');
+  });
+
+  document.getElementById('btn-save').addEventListener('click', () => {
+    document.getElementById('test-status').textContent = 'Saved';
+    if (window.ui && typeof window.ui.showToast === 'function') window.ui.showToast('Save action', 'success');
+  });
+
+  document.getElementById('btn-load').addEventListener('click', () => {
+    document.getElementById('test-status').textContent = 'Loaded';
+    if (window.ui && typeof window.ui.showToast === 'function') window.ui.showToast('Load action', 'success');
   });
 
   document.getElementById('btn-info').addEventListener('click', () => {
